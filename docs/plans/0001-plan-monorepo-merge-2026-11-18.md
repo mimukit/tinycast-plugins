@@ -116,7 +116,7 @@ Done when: `grep -rn "function fakeKeychain\|function findAll" plugins/` prints 
 
 Done when: `scripts/check-copies.sh` prints nothing and exits 0, `grep -rn "Copied from" plugins packages` prints nothing, `grep -rln "@raycast/api" packages/kit/src --exclude-dir=ui` prints nothing, `pnpm turbo run typecheck test build smoke` passes with every tinydrop error-message test unchanged, and each bundle size is within 1 KB of the Phase 2 baseline.
 
-### Phase 6: Add CI (#1)
+### Phase 6: Add CI (#1) (built 2026-11-18)
 
 - Add `.github/workflows/ci.yml`. It runs on each push to `main` and each PR: set up pnpm and Node, `pnpm install --frozen-lockfile`, then `sqlite3 --version`, then `pnpm turbo run typecheck test build`, then `scripts/check-copies.sh`.
 - Add a smoke job that clones `abue-ammar/tinycast` at the pinned commit in the design decisions and runs `pnpm turbo run smoke` with `TINYCAST_DIR` set.

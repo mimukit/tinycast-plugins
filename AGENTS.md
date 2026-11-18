@@ -25,6 +25,7 @@ Run these from the repo root.
 - Shared runtime code lives in `@tinycast/kit` (`packages/kit`): the Keychain, the `WriteQueue`, the base `HttpApiError` and `errorMessage()`. Its UI parts, such as the `Picker` screen, live in `@tinycast/kit/ui`. Only `packages/kit/src/ui/` may import `@raycast/api`, so Vitest runs the rest of the kit in Node. A plugin API error extends `HttpApiError`.
 - `bash scripts/check-copies.sh` prints each file or line that copies shared code into a plugin and exits 1 on a match. Keep it clean.
 - Keep each command bundle under 300 KB. `pnpm turbo run build` prints the sizes.
+- CI (`.github/workflows/ci.yml`) runs on each push to `main` and each PR. The `gate` job runs `pnpm install --frozen-lockfile`, `sqlite3 --version`, `pnpm turbo run typecheck test build` and `bash scripts/check-copies.sh`; the `smoke` job runs `pnpm turbo run smoke` against Tinycast at the commit in `TINYCAST_SHA`. On a PR both jobs filter to `--filter=...[origin/main]`. The owner changes the Tinycast pin by hand in a PR.
 
 ## Worktree setup
 
