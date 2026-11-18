@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WriteQueue } from "../src/api/queue";
+import { WriteQueue } from "@tinycast/kit";
 import { UndoStack } from "../src/undo/stack";
 import { task } from "./fixtures";
 

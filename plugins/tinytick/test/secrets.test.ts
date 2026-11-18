@@ -1,6 +1,7 @@
+import { SECURITY } from "@tinycast/kit";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// A fake /usr/bin/security over an in-memory keychain. It reads `security -i`
+// A fake Keychain tool (SECURITY) over an in-memory keychain. It reads `security -i`
 // lines the way the real tool does: split on spaces, with "…", \" and \\.
 const store = new Map<string, string>();
 const calls: string[][] = [];
@@ -36,13 +37,13 @@ function fakeSecurity(args: string[], input?: string) {
 
 vi.mock("node:child_process", () => ({
   spawnSync: (file: string, args: string[], options: { input?: string }) => {
-    expect(file).toBe("/usr/bin/security");
+    expect(file).toBe(SECURITY);
     calls.push(args);
     return fakeSecurity(args, options.input);
   },
 }));
 
-const { addCommand, getAuth, saveApiToken, saveV2Cookie, signOut } = await import("../src/auth/secrets");
+const { KEYCHAIN_SERVICE, addCommand, getAuth, saveApiToken, saveV2Cookie, signOut } = await import("../src/auth/secrets");
 
 beforeEach(() => {
   store.clear();
@@ -91,5 +92,16 @@ describe("secrets", () => {
     await signOut();
     await signOut();
     expect(store.size).toBe(0);
+  });
+
+  it("uses its own Keychain service, tinytick, for every call", async () => {
+    expect(KEYCHAIN_SERVICE).toBe("tinytick");
+    await saveApiToken("tok");
+    expect([...store.keys()]).toEqual(["tinytick/api-token"]);
+    await getAuth();
+    await signOut();
+    const services = calls.filter((args) => args[0] !== "-i").map((args) => option(args, "-s"));
+    expect(services.length).toBeGreaterThan(0);
+    expect(new Set(services)).toEqual(new Set(["tinytick"]));
   });
 });

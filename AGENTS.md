@@ -21,7 +21,9 @@ Run these from the repo root.
 
 - Use pnpm only. Do not commit a lockfile from another package manager. The repo has one `pnpm-lock.yaml`, at the root.
 - Do not add the Raycast CLI (`ray`) or `@raycast/utils`. Each plugin builds with the `tinycast-build` bin from `packages/build`.
-- Never store a secret in a preference, `LocalStorage` or `Cache`. Tinycast keeps those as plaintext JSON. Secrets go through each plugin's `src/auth/secrets.ts` to the Keychain.
+- Never store a secret in a preference, `LocalStorage` or `Cache`. Tinycast keeps those as plaintext JSON. Secrets go to the Keychain through `createKeychain({ service })` from `@tinycast/kit`. Each plugin's `src/auth/secrets.ts` names its own service and accounts; only `packages/kit/` runs the macOS `security` tool.
+- Shared runtime code lives in `@tinycast/kit` (`packages/kit`): the Keychain, the `WriteQueue`, the base `HttpApiError` and `errorMessage()`. Its UI parts, such as the `Picker` screen, live in `@tinycast/kit/ui`. Only `packages/kit/src/ui/` may import `@raycast/api`, so Vitest runs the rest of the kit in Node. A plugin API error extends `HttpApiError`.
+- `bash scripts/check-copies.sh` prints each file or line that copies shared code into a plugin and exits 1 on a match. Keep it clean.
 - Keep each command bundle under 300 KB. `pnpm turbo run build` prints the sizes.
 
 ## Worktree setup

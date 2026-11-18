@@ -8,7 +8,7 @@
 // The checkout is the first argument, else TINYCAST_DIR, else ../tinycast beside
 // the repo root.
 //
-// sqlite3 runs for real, on a database in a temp supportPath. /usr/bin/security
+// sqlite3 runs for real, on a database in a temp supportPath. The Keychain tool
 // is answered from memory, so the run never touches a Keychain (and works on
 // Linux, which has none). The Swift renderer is not covered.
 //

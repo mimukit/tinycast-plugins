@@ -34,7 +34,7 @@ import { daysAgo, fullResyncDue, isStale, progressText, resyncEstimate, syncSumm
 import { AccountView } from "./AccountView";
 import { AddBookmarkForm } from "./AddBookmarkForm";
 import { EditBookmarkForm } from "./EditBookmarkForm";
-import { Picker } from "./Picker";
+import { Picker } from "@tinycast/kit/ui";
 import { showFailure } from "./failure";
 import { openStore } from "./store";
 import { syncNow, syncTimes } from "./sync";
