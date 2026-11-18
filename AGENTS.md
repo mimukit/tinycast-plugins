@@ -15,12 +15,12 @@ Run these from the repo root.
 - `pnpm turbo run typecheck test build` runs the three tasks in every workspace package. `build` writes each plugin's `dist/` and prints the bundle sizes.
 - `pnpm --filter <name> <script>` runs one script in one plugin, for example `pnpm --filter tinydrop test`.
 - `TINYCAST_DIR=<tinycast-checkout> pnpm turbo run smoke` builds each plugin, then runs its bundles in Tinycast's JS runtime against a fake server. The smoke script takes the checkout from its first argument (`pnpm --filter tinytick smoke <path>`), else `TINYCAST_DIR`, else `../tinycast` beside the repo root. `ONLY`, `VERBOSE` and `TREE` pass through Turbo to the smoke script.
-- `build`, `typecheck` and `test` are cached in `.turbo/`. `smoke`, `build:install`, `probe` and `bench` always run.
+- `build`, `typecheck` and `test` are cached in `.turbo/`. `smoke`, `build:install`, `probe` and `bench` always run. Each of the three cached tasks depends on `transit`, a task with no script, so the files of each package in `packages/` go into the hash of each plugin task that uses it. Without it, an edit in `packages/` leaves a stale cache hit.
 
 ## Rules for agents
 
 - Use pnpm only. Do not commit a lockfile from another package manager. The repo has one `pnpm-lock.yaml`, at the root.
-- Do not add the Raycast CLI (`ray`) or `@raycast/utils`. Each plugin builds with its `scripts/build.mjs`.
+- Do not add the Raycast CLI (`ray`) or `@raycast/utils`. Each plugin builds with the `tinycast-build` bin from `packages/build`.
 - Never store a secret in a preference, `LocalStorage` or `Cache`. Tinycast keeps those as plaintext JSON. Secrets go through each plugin's `src/auth/secrets.ts` to the Keychain.
 - Keep each command bundle under 300 KB. `pnpm turbo run build` prints the sizes.
 

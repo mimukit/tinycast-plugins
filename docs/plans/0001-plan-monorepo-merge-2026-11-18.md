@@ -85,7 +85,7 @@ Done when: `git rev-list --count` on the second parent of each import merge prin
 
 Done when: `pnpm install --frozen-lockfile` passes, `pnpm turbo run typecheck test build` passes for both plugins, `TINYCAST_DIR=<checkout> pnpm turbo run smoke` passes every flow of both plugins, and the baseline file lists every bundle of both plugins.
 
-### Phase 3: Extract `@tinycast/config` and `@tinycast/build` (#1)
+### Phase 3: Extract `@tinycast/config` and `@tinycast/build` (#1) (built 2026-11-18)
 
 - Make `packages/config` with `tsconfig.base.json` (the current shared `tsconfig.json`) and `vitest.base.ts`. Each plugin `tsconfig.json` keeps only `extends` and `include`. Each plugin `vitest.config.ts` merges the base. tinydrop keeps `passWithNoTests`.
 - Make `packages/build` with the `tinycast-build` bin. It reads `package.json`, `src/manifest.json` and `assets/` from the current folder and keeps `--dev`, `--install`, `TINYCAST_EXT_DIR`, `TINYCAST_BUNDLE_ID`, the icon hash and the 300 KB check.

@@ -1,8 +1,4 @@
-import { defineConfig } from "vitest/config";
+import base from "@tinycast/config/vitest.base";
+import { defineConfig, mergeConfig } from "vitest/config";
 
-export default defineConfig({
-  test: {
-    include: ["test/**/*.test.ts"],
-    environment: "node",
-  },
-});
+export default mergeConfig(base, defineConfig({}));

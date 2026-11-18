@@ -1,6 +1,12 @@
+#!/usr/bin/env node
 // Builds the Raycast-format extension Tinycast loads: dist/package.json,
-// dist/assets/, and one CommonJS bundle per command. With --install, it also
-// copies dist/ into Tinycast's extensions folder.
+// dist/assets/, and one CommonJS bundle per command (src/commands/<name>.tsx).
+// react, @raycast/api and the Node builtins stay external. With --install, it
+// also copies dist/ into Tinycast's extensions folder,
+// ~/Library/Application Support/<TINYCAST_BUNDLE_ID>/extensions/<manifest name>,
+// or into TINYCAST_EXT_DIR when that is set. It reads package.json,
+// src/manifest.json and assets/ from the current folder, which is the plugin
+// folder when pnpm or turbo runs the "build" script.
 import { build } from "esbuild";
 import { createHash } from "node:crypto";
 import { builtinModules } from "node:module";
@@ -8,7 +14,7 @@ import { cpSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFil
 import { homedir } from "node:os";
 import { extname, join, resolve } from "node:path";
 
-const root = resolve(import.meta.dirname, "..");
+const root = resolve(process.cwd());
 const dist = join(root, "dist");
 const manifest = JSON.parse(readFileSync(join(root, "src/manifest.json"), "utf8"));
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
