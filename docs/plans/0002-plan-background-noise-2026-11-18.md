@@ -1,50 +1,59 @@
-# Plan: Background noise during work hours
+# Plan: tinynoise, local background sounds
+
+Grilled: 2026-11-18
 
 Review: pending
 
-Status: draft. The owner defers grilling to a separate session. This plan does not authorize implementation.
+Status: grilled. Ready to file as issues. The owner approves a commit and push of this plan on `main` and one issue per phase.
 
 ## Context
 
-The owner wants local background sounds during work hours. Playback can run all day, so low CPU and memory use take priority. The owner selects Option A, a detached shell loop that runs `/usr/bin/afplay`.
+The owner wants local background sounds (ocean waves, river, rain, forest, and others) while they work. Playback can run all day, so low CPU and memory use take priority. A detached `/bin/sh` loop runs `/usr/bin/afplay`, so no JavaScript engine stays alive during playback.
 
-The owner manually adds downloaded audio files to a durable sound directory. The plugin discovers those files and shows a native selection screen. The screen must accommodate ocean waves, river, rain, forest, and other sounds. The source of those sounds remains open.
-
-Target: open. The owner has not accepted CPU or memory limits. The short spike supplies initial observations, but no all-day baseline or isolated `coreaudiod` overhead.
+The owner adds downloaded audio files to `~/Music/Tinynoise` by hand. The plugin finds them each time its list opens. The plugin has no schedule: the owner starts and stops playback by hand.
 
 ## Design decisions (settled)
 
 | Decision | Resolution |
 |----------|------------|
-| Playback architecture | Option A. Tinycast commands control a detached `/bin/sh` loop that runs `/usr/bin/afplay` with local audio. |
-| Audio acquisition | The owner manually adds downloaded files. The plugin discovers them automatically. Discovery timing remains open. |
-| Schedule scope | Work hours remain in scope. Automatic start, automatic stop, and manual override behavior remain open. |
-| Runtime cost | Avoid a permanent JavaScript engine or file watcher unless live use establishes a need. |
-| Repository layout | Keep this plan in root `docs/plans/`. Choose the plugin name before creating `plugins/<name>/`. |
-| Current authorization | Save and commit this draft on `main`. Do not implement, install tools, repeat the spike, file issues, or push. |
-| Grilling | Continue in a separate session. The draft has no `Grilled:` stamp. |
+| Plugin name | `tinynoise`, title "Tinynoise", in `plugins/tinynoise/`. |
+| Playback architecture | Option A. A short-lived Tinycast command starts a detached `/bin/sh -c <script>` loop that runs `/usr/bin/afplay` on a local file. No Swift helper. |
+| Schedule | None. No work-hours logic, no interval command, no LaunchAgent. Playback runs until the owner stops it. |
+| Sound folder | Fixed at `~/Music/Tinynoise`. No preference. The plugin creates the folder when it is missing. It survives uninstall, because it is outside the extension support folder. |
+| Bundled sounds | None. The empty state names the folder and offers "Open Sound Folder". A "Generate Noise" action is a possible follow-up, not v1 scope. |
+| Commands | Three. "Play Sound" (`view`, the list). "Stop Sound" (`no-view`). "Toggle Sound" (`no-view`): it stops the sound that plays, or it replays the last sound. |
+| Volume | System volume only. No `afplay -v`, no volume preference. |
+| Status display | A "Now playing" row at the top of the list, with a Stop action. No menu-bar command in v1. A menu-bar command with no interval is a possible follow-up. |
+| UI | Native `List`, `List.Section`, `List.EmptyView` and `ActionPanel` only. No mockup. The owner approves the list in the real app in phase 4. |
+| Resource target | No gate. Phase 4 records no measurement. The spike numbers below stay the only baseline. |
+| Formats | Allowlist `.m4a .aac .mp3 .wav .aif .aiff .caf`, case-insensitive. `afinfo <file>` checks the file at play time. A file that fails the check does not start the loop. |
+| Discovery | Scan on each open of the list, plus a "Refresh" action. No watcher. Files in the folder root form the first section. Each first-level subfolder forms one `List.Section`, named after the folder. Deeper levels are ignored. Hidden files and folders are skipped. A symlink counts only when it resolves to a regular file. Sort by label, case-insensitive. The label is the file name without its extension. When two labels in one section match, each shows its file name as a subtitle. |
+| File identity | The list item carries the resolved absolute path, never the label. Before playback the path must still sit inside `~/Music/Tinynoise` after `realpath`, and must still be a regular file with an allowed extension. |
+| Single session | One session only. A start while a session plays stops the old group first, then starts the new one. Enter on the sound that plays now does nothing and shows a HUD. |
+| Locking | An `mkdir` lock at `<supportPath>/lock` serializes start, stop and toggle. A lock older than 10 s counts as stale and is removed. |
+| Loop launch | `spawn('/bin/sh', ['-c', LOOP_SCRIPT, 'tinynoise-loop', token, file], { detached: true, stdio: 'ignore' })`, then `child.unref()`. The script is a POSIX `sh` string in the bundle, so no script file is written. Read `child.pid` after `await Promise.resolve()`, because Tinycast returns 0 before that. |
+| Process identity | `<supportPath>/session.json` records the shell PID, the PGID, a random 128-bit hex token, the file path, and the start time. The token is in the loop argv. Before any signal, `ps -o pgid=,command= -p <pid>` must show the recorded PGID and the token. |
+| Stop | SIGTERM to the verified group. Wait up to 2 s. Send SIGKILL only when the group still verifies. When ownership is not proven, delete the stale record and send no signal. |
+| Last sound | `<supportPath>/last.json` keeps the path of the last started sound for "Toggle Sound". When it is missing or the file is gone, the command shows a HUD and starts nothing. |
+| Player failure | When `afplay` exits non-zero in under 2 s three times in a row, the loop writes `<supportPath>/failure.json` and exits. The next list open shows the error in the "Now playing" row and deletes the marker. |
+| Restart gap | Not measured. Reopen Option B (a Swift helper) only when the owner hears an unacceptable gap in live use. |
+| Test runner | Vitest for pure logic (discovery, path checks, state parsing). Lifecycle tests also run in Vitest: they start the real `/bin/sh` loop with a fake player (a `sleep` script) in a temp support folder, on Linux and macOS. The `@tinycast/smoke` harness covers Tinycast integration and starts no audio. Listening stays attended. |
+| Test isolation | Lifecycle tests signal only groups that they started and verified by token. No test signals a process it did not start. |
+| Outward actions | Approved on 2026-11-18: commit and push this plan on `main`, and file one GitHub issue per phase. |
 
-## Repository and UI evidence
+## Tinycast facts checked on 2026-11-18
 
-- Root `AGENTS.md` defines pnpm workspaces, shared packages, bundle limits, local checks, and artifact serials.
-- `plugins/tinytick/package.json` supplies a manifest and script reference. Both existing plugins use TypeScript, React, and Vitest.
-- `packages/build/bin/tinycast-build.mjs` builds command bundles. Reuse `@tinycast/build` instead of adding the Raycast CLI.
-- `packages/config/` supplies shared configuration. `packages/smoke/src/index.mjs` supplies the Tinycast runtime harness.
-- `packages/kit/src/ui/Picker.tsx` supplies a native form dropdown. Its comment records flattened submenus and scroll retention in pushed lists.
-- Existing plugins use native `List`, `Form`, and `ActionPanel` components. No `DESIGN.md` or approved visual reference exists in the inspected repository.
-- No shared playback or schedule utility exists in the inspected packages. Keep plugin-specific code local unless another plugin needs it.
+A sub-agent read the Tinycast checkout at `../tinycast` (paths relative to that checkout).
 
-Tinycast documents native `List`, `Grid`, and `Form` components. It does not establish a general custom modal API. Recommend a root native sound list with search and Enter to play. The owner must approve this substitute before implementation. The existing picker remains an alternative for a smaller selector.
-
-Sources checked on 2026-11-18:
-
-- [Tinycast compatibility](https://tinycast.dev/docs/extensions/compatibility/) documents the native components, child processes, and command modes.
-- [Tinycast configuration](https://tinycast.dev/docs/extensions/customising/) documents preferences and background intervals. The shortest refresh interval is one minute. Failures increase the interval, so this is not an exact schedule guarantee.
-- The configuration page states that uninstall removes the extension support folder. Do not choose that folder for irreplaceable downloaded sounds without an explicit retention decision.
+- `environment.supportPath` is `~/Library/Application Support/<bundle id>/extension-support/<name>/`. An update keeps it. Uninstall deletes it (`Tinycast/Features/Extensions/Service/ExtensionCatalog.swift:77-82`, `:220-223`, `:255`). This suits the lock and the session files, but not the sounds.
+- A user-started `no-view` command can call `showHUD` and `showToast`. A background launch drops all feedback (`ExtensionHostBridge.swift:387`).
+- Preferences support `directory`, `file` and `dropdown`. No number type exists (`ExtensionManifest.swift:10-20`).
+- `List.Section`, `List.EmptyView`, item `accessories` and `searchBarAccessory` exist (`Scripts/raycast-runtime/src/api/components.js:154`, `:200`).
+- `MenuBarExtra` exists and holds no JavaScript while idle (`docs/features/extensions.md:25-27`). Interval commands run only while Tinycast runs, with a 60 s floor for `no-view` (`ExtensionRefreshPolicy.swift:6-8`). Tinycast has no API to run code at login or while it is closed.
 
 ## Verified spike evidence supplied by the owner
 
-These results come from the earlier conversation on 2026-11-18. This planning session does not repeat the spike.
+These results come from an earlier conversation on 2026-11-18. The grill does not repeat the spike.
 
 - The Mac runs macOS 27.2.1, build 26B131. Tinycast is 0.12.15, build 143, with bundle identifier `com.abueammar.tinycast`.
 - Python 3.9.6, Swift 6.4.2, Node 26.13.1, npm, pnpm, `afplay`, `afconvert`, and `shortcuts` exist. The spike installs no tools.
@@ -52,107 +61,71 @@ These results come from the earlier conversation on 2026-11-18. This planning se
 - The owner hears AAC playback after palette closure, another command, and Command-Q.
 - `ps` shows shell PID 36141 and PGID 36141. Player PID 36160 belongs to that group. The shell PPID changes from Tinycast PID 21736 to PID 1 after Tinycast exits.
 - `child.pid` initially returns 0. It returns the actual PID after `await Promise.resolve()`.
-- The temporary stop helper identifies spike processes and sends SIGTERM to the verified group. Both player processes disappear. This does not prove production identity validation.
-- Four samples at one-minute intervals span only three minutes. `afplay` uses 0.1% CPU and RSS 7408–12720 KiB. The shell uses 0.0% CPU and RSS 1200–2112 KiB.
-- `coreaudiod` fluctuates. The spike does not isolate its playback overhead.
-- Five-minute mono 48 kHz, 16-bit brown-noise WAV and approximately 94.9 kbps AAC assets use a two-second crossfade. AAC playback works.
-- The owner cancels the 30–60 minute measurement and restart listening tests. The WAV/AAC restart comparison does not occur. These remain unverified live-use risks and do not block planning.
-- No Swift helper is built. Consider Option B only if live use establishes a reason, such as unacceptable restart gaps.
-- The owner finds no Shortcuts action named “Background Sound.” No Noise On/Off shortcuts exist or pass a test. Option C is unavailable through that proposed method on this Mac.
-- Spike arguments arrive as displayed labels. Normalization and validation correct the initial nonexistent path. This error does not establish an audio runtime failure.
-- Every spike process, timer, audio file, script, log, extension, storage file, and support folder is removed. `/tmp/noise-spike.bhNhux` no longer exists. The spike leaves the repository unchanged.
+- The temporary stop helper sends SIGTERM to the verified group. Both player processes disappear. This does not prove production identity validation.
+- Four samples at one-minute intervals span three minutes. `afplay` uses 0.1% CPU and RSS 7408–12720 KiB. The shell uses 0.0% CPU and RSS 1200–2112 KiB. `coreaudiod` fluctuates and is not isolated.
+- Five-minute mono 48 kHz, 16-bit brown-noise WAV and approximately 94.9 kbps AAC assets use a two-second crossfade. AAC playback works. The WAV/AAC restart comparison does not occur.
+- No Shortcuts action named "Background Sound" exists on this Mac, so Option C is unavailable.
+- Spike arguments arrive as displayed labels. This is why the list item carries the path, not the label.
+- The spike leaves no process, file, or repository change behind.
 
 ## Approach
 
-Use short-lived Tinycast commands for selection and control. Let the detached shell supervise `afplay`. Store downloaded sounds outside the installed bundle at the location the owner selects. Do not infer process ownership from a PID alone.
+Short-lived Tinycast commands select and control playback. The detached shell supervises `afplay`. The sounds live in `~/Music/Tinynoise`. The lock, session, last-sound and failure files live in `environment.supportPath`. No code infers process ownership from a PID alone.
 
-Option A is settled. A Swift helper adds build and maintenance cost without a demonstrated need. The proposed Shortcuts method is unavailable on this Mac.
+Phases 1 and 2 do not depend on each other. Phase 3 needs both. Phase 4 needs phase 3.
 
-The phases below describe proposed future work. Their scope and acceptance details remain subject to grilling.
+### Phase 1: Scaffold the plugin and sound discovery
 
-### Phase 1: Settle the product and runtime contract
+- Create `plugins/tinynoise/` with the structure, scripts and dev dependencies of `plugins/tinytick/`. Reuse `@tinycast/build`, `@tinycast/config` and `@tinycast/smoke`. Add an `AGENTS.md` for the plugin.
+- Declare the three commands in the manifest. "Play Sound" can render a placeholder list in this phase; "Stop Sound" and "Toggle Sound" can show a "not built" HUD.
+- Add a pure discovery module: input is a root path, output is sections of items with label, subtitle and resolved path. Apply every rule in the Discovery and Formats rows.
+- Add a pure path check that resolves a path and confirms it is a regular allowed file inside the sound folder.
+- Vitest covers, with temp folders: root files, one subfolder level, deeper files ignored, hidden files, symlinks to a file and to a folder, a symlink that points outside the root, duplicate labels, extension case, an unsupported extension, a missing root, and a file deleted between scan and check.
 
-Attended: the owner selects the name, UI, resource target, sound storage, controls, and schedule behavior before implementation.
+Done when: `pnpm turbo run typecheck test build` passes with `tinynoise` included, `bash scripts/check-copies.sh` is clean, and the discovery tests above pass.
 
-- Resolve the open questions below and update this file.
-- Approve the existing native UI reference or another supported screen. Record the selection and date.
-- Define the schedule behavior across sleep, wake, Tinycast exit, and manual Stop.
-- Define the measurement method and accepted CPU and memory limits. Record any deferred live-use checks explicitly.
-- Confirm test runners for shell lifecycle checks and native UI checks. Vitest covers pure TypeScript logic; the shared smoke harness covers Tinycast integration.
+### Phase 2: The playback loop and safe process ownership
 
-Done when: the plan records each decision as settled or explicitly deferred, names each attended check, and identifies every remaining implementation blocker.
+- Write `LOOP_SCRIPT` as a POSIX `sh` string. It loops `afplay "$file"` (the player path is a parameter for tests), counts fast failures, writes `failure.json` after three, and exits. A SIGTERM trap stops the player.
+- Write the session module: lock, start, stop, status, stale-record recovery, and the `ps` ownership check from the Process identity and Stop rows. Inject the support path, the player path, the `afinfo` check and the clock.
+- Read `child.pid` after `await Promise.resolve()`.
+- Vitest lifecycle tests start the real `/bin/sh` loop with a fake player in a temp support folder. They cover: start and stop; a start while a session plays (switch); two concurrent starts; a stale lock; a stale session record whose PID is gone; a session record whose PID now belongs to another process without the token (reuse); a player that fails fast three times; SIGKILL after an ignored SIGTERM; and no child left after stop.
 
-### Phase 2: Add the native sound selector and discovery
+Done when: the lifecycle tests pass on Linux and leave no process from the test behind, and no test signals a process it did not start.
 
-- Create `plugins/<name>/` only after the owner settles the name. Reuse the shared build and configuration packages.
-- Add the approved native screen, an empty state, and an action that opens the sound directory.
-- Discover local files at the agreed times without a permanent watcher. Apply the agreed format and subdirectory rules.
-- Validate file arguments and paths before playback. Keep displayed names separate from file identity.
-- Test discovery with temporary directories through Vitest. Include added files, deleted files, duplicate names, and invalid paths.
+### Phase 3: Commands, list and smoke flows
 
-Done when: the agreed discovery action shows a newly added supported file, selection resolves its real path, and invalid files cannot start playback.
+- "Play Sound": the "Now playing" row (or the failure from `failure.json`), then the sections from discovery, then `List.EmptyView` with "Open Sound Folder". Actions: Play (Enter), Stop, Refresh, Open Sound Folder, Show in Finder.
+- Enter on a sound runs the `afinfo` check, then starts or switches. Enter on the sound that plays now shows a HUD and does nothing.
+- "Stop Sound" stops the session and shows a HUD. With no session it shows "Nothing plays".
+- "Toggle Sound" stops a session that plays, or starts the sound in `last.json`. With no last sound or a missing file it shows a HUD and starts nothing.
+- Add `plugins/tinynoise/smoke/` with a `smoke/index.mjs` entry and `flow*` functions for: the empty state, a seeded folder with sections, the "Now playing" row from a seeded `session.json`, and the failure row from a seeded `failure.json`. Smoke flows start no audio.
 
-### Phase 3: Add playback control and safe process ownership
+Done when: `pnpm turbo run typecheck test build` passes, each command bundle stays under 300 KB, `bash scripts/check-copies.sh` is clean, and `TINYCAST_DIR=<checkout> pnpm --filter tinynoise smoke` passes the four flows.
 
-- Start the detached shell loop with argument arrays and correct quoting. Account for Tinycast's delayed `child.pid` value.
-- Apply the agreed duplicate-start, sound-switch, stop, and volume behavior.
-- Design ownership records, exclusive start, stale-state recovery, and process-group validation before sending signals.
-- Define child cleanup and bounded recovery for missing files, invalid audio, and player failures. Prevent a failed loop from consuming CPU continuously.
-- Add deterministic lifecycle checks using short-lived fake players. Settle the runner in Phase 1. Never signal unrelated processes during a test.
+### Phase 4: Live checks and docs
 
-Done when: lifecycle checks cover concurrent starts, stale ownership records, PID reuse, player failure, and group cleanup without affecting unrelated processes.
+Attended: the owner picks the Tinycast checkout commit for smoke, listens on the Mac, and approves the list in the real app.
 
-### Phase 4: Add the selected work-hours behavior
+- Run `pnpm install --frozen-lockfile`, `sqlite3 --version`, `pnpm turbo run typecheck test build`, `bash scripts/check-copies.sh`, and `TINYCAST_DIR=<owner-selected-checkout> pnpm turbo run smoke`.
+- Install with `pnpm --filter tinynoise build:install`. The owner checks: play, switch, stop, toggle, playback after Command-Q, the "Now playing" row, the empty state, and a corrupt file.
+- Write `plugins/tinynoise/README.md`: the sound folder, supported formats, the three commands, how to stop playback before uninstall, and that uninstall keeps `~/Music/Tinynoise`.
+- Record the results of each attended check in the plan or the issue. No resource measurement.
 
-- Choose the schedule mechanism after the owner settles the required behavior. Assess Tinycast intervals against scheduling while Tinycast is closed.
-- Define weekdays, time zone, overnight hours, daylight-saving changes, and missed boundaries.
-- Apply the agreed sleep, wake, exit, restart, and manual override rules.
-- Add schedule tests with an injected clock in Vitest. Cover the selected boundaries without real waiting.
-- Document how the owner disables the schedule and stops any detached playback before uninstall.
-
-Done when: clock-based tests reproduce the agreed schedule and override rules, and the documented disable action prevents the next automatic start.
-
-### Phase 5: Check the plugin and document live-use limits
-
-Attended: the owner approves native UI behavior and listening checks. The owner chooses the Tinycast checkout commit for runtime smoke checks.
-
-- Run the repository's required checks during implementation, not during this planning session.
-- Use `pnpm install --frozen-lockfile`, `sqlite3 --version`, `pnpm turbo run typecheck test build`, and `bash scripts/check-copies.sh`.
-- Run `TINYCAST_DIR=<owner-selected-checkout> pnpm turbo run smoke`. Keep command bundles below 300 KB.
-- Add plugin smoke flows through `@tinycast/smoke`. Distinguish harness results from real native UI and audible playback checks.
-- Check the accepted resource limits using the measurement method from Phase 1. Report player, shell, and any measured audio-service cost separately.
-- Keep the cancelled duration and restart comparisons marked unverified unless the owner later authorizes them. Do not require them before planning.
-- Document supported formats, sound installation, controls, schedules, cleanup, and any bundled asset license.
-
-Done when: the required checks pass, approved native checks have recorded results, and measurements meet the accepted target or explicitly identify the unmet limit. Deferred live-use checks remain visible.
-
-## Open questions
-
-No answers to the initial planning questions are accepted yet. Recommendations below remain proposals.
-
-- Resource target. Ask for maximum CPU and combined shell/player memory use. Settle sampling duration, peak versus average, and treatment of `coreaudiod`.
-- Work hours. Choose manual start with automatic stop, automatic start and stop, or manual playback with a reminder. The initial recommendation is manual start with automatic stop. Ask for weekdays, hours, and time zone.
-- UI. Approve a root native sound list, a native dropdown, or a required separate modal. The initial recommendation is the root list. Verify material substitutes with the owner.
-- Name. Settle the plugin name before creating its directory or deriving permanent storage paths.
-- Durable directory. Choose a location that survives extension updates. Decide whether sounds must survive uninstall and whether the owner can change the location.
-- Discovery. Choose scans on command open, an explicit refresh, or another trigger. Settle recursive scans, symlinks, hidden files, duplicate labels, and sorting.
-- Formats. Define the initial allowlist and actual codec validation. AAC works in the spike; the WAV restart behavior remains untested. Do not claim every `afplay` format works in Tinycast.
-- Built-in sounds. Choose no bundled sounds, bundled samples, or another source. If bundled, verify redistribution rights and preserve attribution before choosing assets.
-- Controls. Settle Start, Stop, Toggle, pause/resume, sound switching, and status display. Decide what selection does when the same sound already plays.
-- Volume. Choose system volume or per-player volume. Settle persistence and whether a volume change restarts playback.
-- Duplicate starts. Define one active playback session, concurrent command behavior, and the response to a second start.
-- Process identity. Settle ownership tokens, private state paths, PID and PGID validation, locking, stale records, and safe handling of PID reuse.
-- Stop. Define SIGTERM handling, child cleanup, timeout, escalation, and the response when ownership cannot be proven.
-- Schedule lifecycle. Define sleep behavior, wake recovery, missed starts, manual Stop suppression, Tinycast exit, login, reboot, and uninstall cleanup.
-- Audio continuity. Decide what restart gap is acceptable during live use. Reopen Option B only when observed gaps or another measured failure justify it.
-- Test infrastructure. Confirm the lifecycle runner and native check approach before the build. Keep real listening checks attended.
+Done when: the repo checks pass, the owner records a pass or a named failure for each attended check, and the README exists.
 
 ## Non-goals
 
-- Implementation, tool installation, another spike, issue creation, or a push during this planning session.
-- Streaming audio, automatic downloads, or accounts for sound services.
-- A permanent JavaScript engine or file watcher without a demonstrated need.
-- A Swift helper before live use establishes a reason.
-- A guarantee of all-day resource use from the three-minute sample span.
-- A claim that cancelled restart or duration tests pass.
-- A plugin name or plugin directory before the owner accepts the name.
+- A schedule, work hours, auto-start, auto-stop, reminders, or a LaunchAgent.
+- Per-player or per-sound volume.
+- Bundled sounds, streaming audio, automatic downloads, or accounts for sound services.
+- A menu-bar command in v1.
+- A permanent JavaScript engine or file watcher.
+- A Swift helper before live use shows a reason.
+- A resource gate or a new measurement. A claim that the cancelled restart or duration tests pass.
+- Pause and resume. `afplay` has no pause, so Stop and Toggle cover it.
+
+## Follow-ups (not filed)
+
+- "Generate Noise" action that writes brown, pink or white noise into the sound folder.
+- A menu-bar command with no interval, with Stop and the sound list.
