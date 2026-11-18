@@ -14,7 +14,7 @@ Run these from the repo root.
 - `pnpm install`
 - `pnpm turbo run typecheck test build` runs the three tasks in every workspace package. `build` writes each plugin's `dist/` and prints the bundle sizes.
 - `pnpm --filter <name> <script>` runs one script in one plugin, for example `pnpm --filter tinydrop test`.
-- `TINYCAST_DIR=<tinycast-checkout> pnpm turbo run smoke` builds each plugin, then runs its bundles in Tinycast's JS runtime against a fake server. The smoke script takes the checkout from its first argument (`pnpm --filter tinytick smoke <path>`), else `TINYCAST_DIR`, else `../tinycast` beside the repo root. `ONLY`, `VERBOSE` and `TREE` pass through Turbo to the smoke script.
+- `TINYCAST_DIR=<tinycast-checkout> pnpm turbo run smoke` builds each plugin, then runs its bundles in Tinycast's JS runtime against a fake server. The smoke script takes the checkout from its first argument (`pnpm --filter tinytick smoke <path>`), else `TINYCAST_DIR`, else `../tinycast` beside the repo root. `ONLY`, `VERBOSE` and `TREE` pass through Turbo to the smoke script. The harness is `@tinycast/smoke` in `packages/smoke`; each plugin keeps its fake server, seed data and `flow*` functions in `plugins/<name>/smoke/`, with `smoke/index.mjs` as the entry file.
 - `build`, `typecheck` and `test` are cached in `.turbo/`. `smoke`, `build:install`, `probe` and `bench` always run. Each of the three cached tasks depends on `transit`, a task with no script, so the files of each package in `packages/` go into the hash of each plugin task that uses it. Without it, an edit in `packages/` leaves a stale cache hit.
 
 ## Rules for agents
