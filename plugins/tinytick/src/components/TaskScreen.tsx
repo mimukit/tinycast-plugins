@@ -7,7 +7,7 @@ import { addSubtask, create, setChecklist, setParent } from "../store/actions";
 import { useLive } from "../store/live";
 import { checklistProgress, childTasks } from "../views/select";
 import { taskAccessories, taskIcon } from "./format";
-import { Picker } from "./Picker";
+import { Picker } from "@tinycast/kit/ui";
 import { TaskActions } from "./TaskActions";
 import { TaskDetail } from "./TaskDetail";
 

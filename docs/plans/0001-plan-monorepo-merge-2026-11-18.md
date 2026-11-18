@@ -103,7 +103,7 @@ Done when: no `scripts/build.mjs` exists under `plugins/`, `pnpm turbo run typec
 
 Done when: `grep -rn "function fakeKeychain\|function findAll" plugins/` prints nothing, `pnpm turbo run smoke` passes every flow of both plugins with the same flow count as Phase 2, and `ONLY=<flowName> pnpm --filter tinydrop smoke` runs one flow.
 
-### Phase 5: Extract `@tinycast/kit` (#1)
+### Phase 5: Extract `@tinycast/kit` (#1) (built 2026-11-18)
 
 - Make `packages/kit/src/keychain.ts` from the shared part of `secrets.ts`: `createKeychain({ service })` returns `read`, `write`, `remove`, and the file exports `quoteArg` and `addCommand`. Each plugin `src/auth/secrets.ts` keeps its own account names and its own functions on top of the kit (tinydrop: `saveToken`, `deleteToken`; tinytick: `saveApiToken`, `saveV2Cookie`, `signOut`).
 - Make `packages/kit/src/queue.ts` from the tinydrop `queue.ts`, with `run()` and `runAll()`. Change tinytick to import it.

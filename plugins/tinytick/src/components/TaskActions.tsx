@@ -11,7 +11,7 @@ import type { Auth } from "../auth/secrets";
 import { AccountView } from "./AccountView";
 import { DateForm } from "./DateForm";
 import { PRIORITY_COLOR } from "./format";
-import { Picker } from "./Picker";
+import { Picker } from "@tinycast/kit/ui";
 import { EditTaskForm } from "./EditTaskForm";
 import { QuickAddView } from "./QuickAddView";
 import { ServerResults } from "./ServerResults";

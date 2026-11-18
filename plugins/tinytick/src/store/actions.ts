@@ -4,7 +4,7 @@
 import { Alert, Toast, confirmAlert, showToast } from "@raycast/api";
 import { errorMessage } from "../api/errors";
 import type { ChecklistItem, Task, TaskPatch } from "../api/types";
-import { WriteQueue } from "../api/queue";
+import { WriteQueue } from "@tinycast/kit";
 import { UndoStack, previousFields, type UndoEntry } from "../undo/stack";
 import { commitSnapshot, getLive, setLive } from "./live";
 import { openApi, prefs, syncNow, v2Api } from "./service";

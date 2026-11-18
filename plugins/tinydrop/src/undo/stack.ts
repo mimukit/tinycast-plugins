@@ -1,4 +1,4 @@
-// The per-window undo stack. Copied from tinytick and adapted to bookmarks. It
+// The per-window undo stack. Started from tinytick and adapted to bookmarks. It
 // lives in memory, so it ends when the window closes. No @raycast/api import here.
 import type { RaindropPatch } from "../api/types";
 import type { BookmarkRow, CollectionMove } from "../store/types";

@@ -1,0 +1,30 @@
+{
+  "name": "@tinycast/kit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Runtime code the Tinycast plugins share: the Keychain, the write queue, the base HTTP error and the Picker screen.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./keychain": "./src/keychain.ts",
+    "./ui": "./src/ui/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@raycast/api": "^2.6.3",
+    "react": "^19.3.0"
+  },
+  "devDependencies": {
+    "@raycast/api": "^2.6.3",
+    "@tinycast/config": "workspace:*",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "react": "^19.3.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}

@@ -28,7 +28,7 @@ In Tinycast, open Settings › Extensions › Install New › Add from folder, a
 
 In TickTick, open Settings › Account › API Token and create a token. Then run the **Tasks** command, pick "Sign in with an API token", and paste it.
 
-tinytick keeps the token, and the v2 cookie if you set one, in your login Keychain under the service `tinytick`. It reads and writes them with `/usr/bin/security`, and sends a secret to it on stdin, so the secret never appears in the process list. Tinycast keeps preferences, LocalStorage and Cache as plaintext JSON, so no secret goes there.
+tinytick keeps the token, and the v2 cookie if you set one, in your login Keychain under the service `tinytick`. It reads and writes them with the macOS `security` tool, and sends a secret to it on stdin, so the secret never appears in the process list. Tinycast keeps preferences, LocalStorage and Cache as plaintext JSON, so no secret goes there.
 
 There is no browser sign-in. Tinycast dropped extension OAuth support in `v0.11.17-beta.115`.
 

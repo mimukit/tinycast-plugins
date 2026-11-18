@@ -1,5 +1,5 @@
-// Sends the writes for one bookmark in the order they were made. The screens change
-// the store before the server answers, so a second write can start while the
+// Sends the writes for one item in the order they were made. The screens change
+// local state before the server answers, so a second write can start while the
 // first is still out. Without the queue, the server could get them out of order.
 export class WriteQueue {
   private tails = new Map<string, Promise<unknown>>();
@@ -12,7 +12,7 @@ export class WriteQueue {
 
   /**
    * Runs `fn` after every earlier write for each of `keys` settles, whatever their result. A bulk
-   * call uses one key per bookmark ID, so it waits for each bookmark's earlier writes and a later
+   * call uses one key per item ID, so it waits for each item's earlier writes and a later
    * write to any of them waits for it.
    */
   runAll<T>(keys: string[], fn: () => Promise<T>): Promise<T> {

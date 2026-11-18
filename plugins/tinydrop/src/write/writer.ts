@@ -7,7 +7,7 @@
 // No @raycast/api import here, so vitest runs it with a fake client.
 import { BULK_LIMIT, type RaindropClient } from "../api/client";
 import { BulkGuardError, RaindropApiError, isTokenRejected } from "../api/errors";
-import { WriteQueue } from "../api/queue";
+import { WriteQueue } from "@tinycast/kit";
 import { TRASH_COLLECTION, type BulkReply, type Raindrop, type RaindropPatch } from "../api/types";
 import { bulkTrashIds, type DuplicateGroup } from "../cleanup/duplicates";
 import type { BookmarkRow, BookmarkStore, CollectionMove } from "../store/types";

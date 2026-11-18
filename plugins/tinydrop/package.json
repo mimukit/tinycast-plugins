@@ -16,6 +16,9 @@
     "bench": "node scripts/bench.mjs",
     "probe": "node scripts/probe.mjs"
   },
+  "dependencies": {
+    "@tinycast/kit": "workspace:*"
+  },
   "devDependencies": {
     "@raycast/api": "^2.6.3",
     "@tinycast/build": "workspace:*",
