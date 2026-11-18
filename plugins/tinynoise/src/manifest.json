@@ -1,0 +1,34 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "tinynoise",
+  "title": "Tinynoise",
+  "description": "Play local background sounds from ~/Music/Tinynoise. Playback runs in a small shell loop, with no JavaScript engine kept alive.",
+  "icon": "icon.png",
+  "author": "mimukit",
+  "categories": ["Productivity", "Media"],
+  "license": "MIT",
+  "platforms": ["macOS"],
+  "commands": [
+    {
+      "name": "play-sound",
+      "title": "Play Sound",
+      "subtitle": "Tinynoise",
+      "description": "Pick a background sound from ~/Music/Tinynoise and play it on a loop.",
+      "mode": "view"
+    },
+    {
+      "name": "stop-sound",
+      "title": "Stop Sound",
+      "subtitle": "Tinynoise",
+      "description": "Stop the background sound that plays now.",
+      "mode": "no-view"
+    },
+    {
+      "name": "toggle-sound",
+      "title": "Toggle Sound",
+      "subtitle": "Tinynoise",
+      "description": "Stop the background sound, or play the last sound again.",
+      "mode": "no-view"
+    }
+  ]
+}
