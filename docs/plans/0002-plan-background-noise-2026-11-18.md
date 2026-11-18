@@ -74,7 +74,7 @@ Short-lived Tinycast commands select and control playback. The detached shell su
 
 Phases 1 and 2 do not depend on each other. Phase 3 needs both. Phase 4 needs phase 3.
 
-### Phase 1: Scaffold the plugin and sound discovery
+### Phase 1: Scaffold the plugin and sound discovery (#3)
 
 - Create `plugins/tinynoise/` with the structure, scripts and dev dependencies of `plugins/tinytick/`. Reuse `@tinycast/build`, `@tinycast/config` and `@tinycast/smoke`. Add an `AGENTS.md` for the plugin.
 - Declare the three commands in the manifest. "Play Sound" can render a placeholder list in this phase; "Stop Sound" and "Toggle Sound" can show a "not built" HUD.
@@ -84,7 +84,7 @@ Phases 1 and 2 do not depend on each other. Phase 3 needs both. Phase 4 needs ph
 
 Done when: `pnpm turbo run typecheck test build` passes with `tinynoise` included, `bash scripts/check-copies.sh` is clean, and the discovery tests above pass.
 
-### Phase 2: The playback loop and safe process ownership
+### Phase 2: The playback loop and safe process ownership (#3)
 
 - Write `LOOP_SCRIPT` as a POSIX `sh` string. It loops `afplay "$file"` (the player path is a parameter for tests), counts fast failures, writes `failure.json` after three, and exits. A SIGTERM trap stops the player.
 - Write the session module: lock, start, stop, status, stale-record recovery, and the `ps` ownership check from the Process identity and Stop rows. Inject the support path, the player path, the `afinfo` check and the clock.
@@ -93,7 +93,7 @@ Done when: `pnpm turbo run typecheck test build` passes with `tinynoise` include
 
 Done when: the lifecycle tests pass on Linux and leave no process from the test behind, and no test signals a process it did not start.
 
-### Phase 3: Commands, list and smoke flows
+### Phase 3: Commands, list and smoke flows (#3)
 
 - "Play Sound": the "Now playing" row (or the failure from `failure.json`), then the sections from discovery, then `List.EmptyView` with "Open Sound Folder". Actions: Play (Enter), Stop, Refresh, Open Sound Folder, Show in Finder.
 - Enter on a sound runs the `afinfo` check, then starts or switches. Enter on the sound that plays now shows a HUD and does nothing.
@@ -103,7 +103,7 @@ Done when: the lifecycle tests pass on Linux and leave no process from the test 
 
 Done when: `pnpm turbo run typecheck test build` passes, each command bundle stays under 300 KB, `bash scripts/check-copies.sh` is clean, and `TINYCAST_DIR=<checkout> pnpm --filter tinynoise smoke` passes the four flows.
 
-### Phase 4: Live checks and docs
+### Phase 4: Live checks and docs (#3)
 
 Attended: the owner picks the Tinycast checkout commit for smoke, listens on the Mac, and approves the list in the real app.
 
