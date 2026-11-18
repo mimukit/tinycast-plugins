@@ -7,7 +7,7 @@ import {
   actionNamed, findAll, itemTitled, pickDropdown, press, pressIn, pressPrefix, rowTitles, runToastAction, setField, sleep, typeSearch, waitFor,
 } from "@tinycast/smoke";
 import { DB_FILE, SqliteStore, run } from "./harness.mjs";
-import { API, BOOKMARKS, COLLECTIONS, NEW_ON_SERVER, SYNCED_MARK, TRASHED } from "./server.mjs";
+import { API, BOOKMARKS, NEW_ON_SERVER, SYNCED_MARK, TRASHED } from "./server.mjs";
 
 /** A store that synced before: the server has one new bookmark and one trashed. */
 const SYNCED_SEED = { bookmarks: [...BOOKMARKS, TRASHED], state: { sync_mark: SYNCED_MARK } };
@@ -959,7 +959,7 @@ async function flowCleanupEditLinks() {
     const bookmark = cleanupItem(401, "https://edit.test/old", "Original title", 11, { note: "Keep this note", tags: ["read"] });
     failures += await run("clean-up-bookmarks", {
       seed: {
-        bookmarks: [bookmark], collections: COLLECTIONS, tags: [{ name: "read", count: 1 }],
+        bookmarks: [bookmark], collections: [{ id: 11, title: "Dev", sort: 0, count: 2 }], tags: [{ name: "read", count: 1 }],
         state: { last_sync: String(now) },
         checks: [{
           bookmarkId: 401, url: bookmark.link, class: classification, status: classification === "unsure" ? 403 : 404,
