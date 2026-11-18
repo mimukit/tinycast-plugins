@@ -2,8 +2,11 @@
 // runtime (the Raycast shim and React reconciler Tinycast ships), with a fake
 // TickTick server. It checks the requests each flow sends.
 //
-//   git clone --depth 1 https://github.com/abue-ammar/tinycast ../tinycast
-//   pnpm build && pnpm smoke ../tinycast
+//   git clone --depth 1 https://github.com/abue-ammar/tinycast ../tinycast   # run in the repo root
+//   pnpm build && pnpm smoke [<tinycast-checkout>]
+//
+// The checkout is the first argument, else TINYCAST_DIR, else ../tinycast beside
+// the repo root.
 //
 // The Swift renderer is not covered. Run the QA plan in Tinycast for that.
 import assert from "node:assert/strict";
@@ -11,7 +14,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const tinycastDir = resolve(process.argv[2] ?? process.env.TINYCAST_DIR ?? "../tinycast");
+const repoRoot = resolve(import.meta.dirname, "../../..");
+const tinycastDir = resolve(process.argv[2] ?? process.env.TINYCAST_DIR ?? resolve(repoRoot, "../tinycast"));
 const harnessPath = join(tinycastDir, "Scripts/raycast-runtime/test.mjs");
 if (!existsSync(harnessPath)) {
   console.error(`No Tinycast checkout at ${tinycastDir}. Pass its path: pnpm smoke <path>`);
