@@ -44,8 +44,8 @@ Target: 0 copied files between plugins, one root command runs the gate for every
 | CI Tinycast pin | The smoke job clones `abue-ammar/tinycast` at `21a0b7fd1f02c19a9fbd5cb0b7c162420aa7b1e2` (HEAD of `/home/dev/projects/tinycast` on 2026-11-18). The owner changes the pin by hand in a PR. |
 | CI `sqlite3` | A CI step runs `sqlite3 --version` before `test`. A missing binary fails the job, so the store tests cannot skip on CI. |
 | Base `HttpApiError` | `class HttpApiError extends Error { constructor(vendor, status, path, body) }` in `@tinycast/kit`. The base owns `status`, `path`, `body`, `isNotFound`, `isRateLimit`, and a `protected describe()` for 404, 429 and the fallback, built from `vendor`. Each subclass handles only 401 and 403 in its own `describe()`, then calls the base. tinydrop keeps `rateLimitReset`, `isTokenRejected`, `BulkGuardError` and the free function `isTokenRejected()`. tinytick keeps `isAuth`. |
-| How phases land | Each of Phases 2 to 6 is one GitHub issue, built by afkkit on its own branch and opened as one PR to `main`. The owner merges each PR. A phase opens its PR only after its full done-when check passes locally. No force push. Changed on 2026-11-18, because afkkit always opens a PR. |
-| Outward actions (approved 2026-11-18) | Phases 2 to 6: push a branch and open a PR to `main` of the new repo. Phase 6: open the test PR `test/ci-filter-tinytick`, read its job log, then close it with `gh pr close --delete-branch`. Phase 1 (repo creation, first push) and Phase 7 (labels, issue transfer, old README pushes, archives) stay attended. |
+| How phases land | Phases 2 to 6 are one GitHub issue with one `## Phase N` section for each phase. afkkit builds them unattended on one branch, commits once for each phase, and opens one PR to `main`. The owner merges it. No force push. Changed on 2026-11-18 at the owner's request. |
+| Outward actions (approved 2026-11-18) | Phases 2 to 6: push one branch and open one PR to `main` of the new repo. Phase 7: open the test PR `test/ci-filter-tinytick`, read its job log, then close it with `gh pr close --delete-branch`. Phase 1 (repo creation, first push) and Phase 7 (test PR, issue transfer, old README pushes, archives) stay attended. |
 | Test runner | No new runner. Vitest for unit tests, the Tinycast runtime harness for smoke, GitHub Actions for CI from Phase 6. |
 | Order of work | Move first with no behavior change, then extract one shared package for each phase. The full gate runs after each phase, so each failure has one cause. |
 
@@ -72,7 +72,7 @@ Attended: the owner approves the creation of the public repo `mimukit/tinycast-p
 
 Done when: `git rev-list --count` on the second parent of each import merge prints 35 for tinydrop and 31 for tinytick (`git log -- <path>` prints 34 and 30, because it hides the one merge commit in each old repo), `git log --follow plugins/tinydrop/src/auth/secrets.ts` reaches the first tinydrop commit, and `gh repo view mimukit/tinycast-plugins` shows `main`.
 
-### Phase 2: Add the workspace with no code change
+### Phase 2: Add the workspace with no code change (#1)
 
 - Add the root `package.json` (private, `packageManager: pnpm@12.9.1`, devDependencies `turbo`, `typescript`, `vitest`, `esbuild`, `@types/node`), `pnpm-workspace.yaml` and `turbo.json` as in the design decisions.
 - Add root scripts: `build`, `typecheck`, `test`, `smoke`, each as `turbo run <task>`.
@@ -80,12 +80,12 @@ Done when: `git rev-list --count` on the second parent of each import merge prin
 - Move `.gitignore` and `LICENSE` to the root and add `.turbo/` to `.gitignore`. Delete the plugin copies.
 - Change the default Tinycast path in both `scripts/smoke.mjs` files so that it resolves from the repo root.
 - Write the root `AGENTS.md` and `CLAUDE.md`. Cut the repo-wide rules out of each plugin `AGENTS.md`. Move the tinydrop worktree setup to the root and change the `.env` path to `plugins/tinydrop/.env`.
-- If `turbo` needs a flag or a config change for pnpm 12 or TypeScript 7, stop and add the change to this plan before you continue.
+- If `turbo` needs a flag or a config change for pnpm 12 or TypeScript 7, add the change to the Tooling row of this plan in the same branch, and record it as an assumption in the PR.
 - Record the size of each command bundle from `pnpm turbo run build` in `docs/research/0001-research-bundle-baseline-2026-11-18.md`.
 
 Done when: `pnpm install --frozen-lockfile` passes, `pnpm turbo run typecheck test build` passes for both plugins, `TINYCAST_DIR=<checkout> pnpm turbo run smoke` passes every flow of both plugins, and the baseline file lists every bundle of both plugins.
 
-### Phase 3: Extract `@tinycast/config` and `@tinycast/build`
+### Phase 3: Extract `@tinycast/config` and `@tinycast/build` (#1)
 
 - Make `packages/config` with `tsconfig.base.json` (the current shared `tsconfig.json`) and `vitest.base.ts`. Each plugin `tsconfig.json` keeps only `extends` and `include`. Each plugin `vitest.config.ts` merges the base. tinydrop keeps `passWithNoTests`.
 - Make `packages/build` with the `tinycast-build` bin. It reads `package.json`, `src/manifest.json` and `assets/` from the current folder and keeps `--dev`, `--install`, `TINYCAST_EXT_DIR`, `TINYCAST_BUNDLE_ID`, the icon hash and the 300 KB check.
@@ -94,7 +94,7 @@ Done when: `pnpm install --frozen-lockfile` passes, `pnpm turbo run typecheck te
 
 Done when: no `scripts/build.mjs` exists under `plugins/`, `pnpm turbo run typecheck test build` passes, smoke passes for both plugins, and each bundle size is within 1 KB of the Phase 2 baseline.
 
-### Phase 4: Extract `@tinycast/smoke`
+### Phase 4: Extract `@tinycast/smoke` (#1)
 
 - Make `packages/smoke` from the harness part of `tinydrop/scripts/smoke.mjs`: the Tinycast path check, the runtime import, `run()`, `fakeKeychain()` with a `service` option, `findAll()`, `press()`, `pressIn()`, `pressPrefix()`, `typeSearch()`, `setField()`, `waitFor()`, `runToastAction()`, `pickDropdown()`, and the `ONLY=` flow filter.
 - Merge the tinytick helpers that tinydrop lacks (`pressOn()`, `choose()`) and its `v2` option, as a general `preferences` option.
@@ -103,12 +103,12 @@ Done when: no `scripts/build.mjs` exists under `plugins/`, `pnpm turbo run typec
 
 Done when: `grep -rn "function fakeKeychain\|function findAll" plugins/` prints nothing, `pnpm turbo run smoke` passes every flow of both plugins with the same flow count as Phase 2, and `ONLY=<flowName> pnpm --filter tinydrop smoke` runs one flow.
 
-### Phase 5: Extract `@tinycast/kit`
+### Phase 5: Extract `@tinycast/kit` (#1)
 
 - Make `packages/kit/src/keychain.ts` from the shared part of `secrets.ts`: `createKeychain({ service })` returns `read`, `write`, `remove`, and the file exports `quoteArg` and `addCommand`. Each plugin `src/auth/secrets.ts` keeps its own account names and its own functions on top of the kit (tinydrop: `saveToken`, `deleteToken`; tinytick: `saveApiToken`, `saveV2Cookie`, `signOut`).
 - Make `packages/kit/src/queue.ts` from the tinydrop `queue.ts`, with `run()` and `runAll()`. Change tinytick to import it.
 - Make `packages/kit/src/ui/Picker.tsx` from the shared `Picker.tsx`, exported as `@tinycast/kit/ui`. Delete both plugin copies.
-- Move `tinytick/test/secrets.test.ts` and `tinytick/test/queue.test.ts` to `packages/kit/test/`. Add a test that each plugin `secrets.ts` still uses its own service name.
+- Add `packages/kit/test/keychain.test.ts`, `queue.test.ts` (with a first test for `runAll()`) and `errors.test.ts`. Keep `tinytick/test/secrets.test.ts` and `tinytick/test/queue.test.ts` in tinytick, now running against the kit. Add a test that each plugin `secrets.ts` still uses its own service name.
 - Make `packages/kit/src/errors.ts` with the base `HttpApiError` from the design decisions and `errorMessage()`. `RaindropApiError` and `TickTickApiError` extend it and keep their names, so each `instanceof` check stays the same. Each message stays the same text.
 - Leave `undo/stack.ts` in each plugin. Change its comment from "Copied from tinytick" to "Started from tinytick".
 - Remove the other "Copied from tinytick" comments.
@@ -116,26 +116,25 @@ Done when: `grep -rn "function fakeKeychain\|function findAll" plugins/` prints 
 
 Done when: `scripts/check-copies.sh` prints nothing and exits 0, `grep -rn "Copied from" plugins packages` prints nothing, `grep -rln "@raycast/api" packages/kit/src --exclude-dir=ui` prints nothing, `pnpm turbo run typecheck test build smoke` passes with every tinydrop error-message test unchanged, and each bundle size is within 1 KB of the Phase 2 baseline.
 
-### Phase 6: Add CI
+### Phase 6: Add CI (#1)
 
 - Add `.github/workflows/ci.yml`. It runs on each push to `main` and each PR: set up pnpm and Node, `pnpm install --frozen-lockfile`, then `sqlite3 --version`, then `pnpm turbo run typecheck test build`, then `scripts/check-copies.sh`.
 - Add a smoke job that clones `abue-ammar/tinycast` at the pinned commit in the design decisions and runs `pnpm turbo run smoke` with `TINYCAST_DIR` set.
 - On PRs, filter the tasks to changed packages with `--filter=...[origin/main]`.
-- Merge the CI PR to `main`. Then open the test PR from branch `test/ci-filter-tinytick` with one comment line in `plugins/tinytick/README.md`. Read the job log, then run `gh pr close --delete-branch`.
 
-Done when: the CI run on `main` shows green for both jobs, the test PR shows green checks and its job log skips the tinydrop tasks, and the test PR is closed with its branch deleted.
+Done when: the PR for Phases 2 to 6 shows green checks for both jobs. The filter check runs in Phase 7, because it needs this CI on `main`.
 
 ### Phase 7: Cut over from the old repos
 
-Attended: the owner approves each outward action (the new labels, the issue transfer, the README change and the archive of both old repos). This phase must come last, because it needs the new repo to work first.
+Attended: the owner approves each outward action (the CI filter test PR, the issue transfer, the README change and the archive of both old repos). This phase must come last, because it needs the new repo to work first.
 
-- Create the labels `ready` and `medium` in `mimukit/tinycast-plugins` with `gh label create`, so the transfer keeps them.
+- After the PR for Phases 2 to 6 merges, open the test PR from branch `test/ci-filter-tinytick` with one comment line in `plugins/tinytick/README.md`. Read the job log, then run `gh pr close --delete-branch`.
 - Transfer tinydrop issue #2: `gh issue transfer 2 mimukit/tinycast-plugins -R mimukit/tinydrop`. Change its paths to `plugins/tinydrop/`.
 - Add a line to the top of each old README that points to `mimukit/tinycast-plugins`. Push it.
 - Archive both old repos with `gh repo archive`.
 - Change the plugin README files in the new repo so that each build command runs from the repo root or with `pnpm --filter <name>`.
 
-Done when: `gh repo view mimukit/tinydrop --json isArchived` and the same for tinytick print `true`, issue #2 is open in `mimukit/tinycast-plugins` with the labels `ready` and `medium`, and on a fresh clone of the new repo `pnpm install --frozen-lockfile && pnpm turbo run typecheck test build` passes, `scripts/check-copies.sh` exits 0, and each bundle stays within 1 KB of the Phase 2 baseline.
+Done when: the test PR shows green checks, its job log skips the tinydrop tasks, and it is closed with its branch deleted. `gh repo view mimukit/tinydrop --json isArchived` and the same for tinytick print `true`, issue #2 is open in `mimukit/tinycast-plugins` with the labels `ready` and `medium`, and on a fresh clone of the new repo `pnpm install --frozen-lockfile && pnpm turbo run typecheck test build` passes, `scripts/check-copies.sh` exits 0, and each bundle stays within 1 KB of the Phase 2 baseline.
 
 ## Open questions
 
