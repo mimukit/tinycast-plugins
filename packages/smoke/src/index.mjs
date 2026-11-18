@@ -4,17 +4,16 @@
 // and its flow* functions; see plugins/<name>/smoke/.
 //
 // The Tinycast checkout is the first CLI argument, else TINYCAST_DIR, else
-// ../tinycast beside the repo root. The Keychain tool (SECURITY from
-// @tinycast/kit) is answered from memory, so a run never touches a Keychain (and
+// ../tinycast beside the repo root. The macOS `security` tool is answered from
+// memory, so a run never touches a Keychain (and
 // works on Linux, which has none). The Swift renderer is not covered.
 //
 // ONLY=<flowName> runs one flow, VERBOSE=1 prints the runtime log, the calls and
 // the toasts, TREE=1 prints the last tree of each run.
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, rmSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { SECURITY } from "@tinycast/kit/keychain";
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -42,7 +41,7 @@ function unquote(line, flag) {
 }
 
 /**
- * Answers the Keychain tool (SECURITY from @tinycast/kit) from memory, with `items` as the accounts of the Keychain
+ * Answers the macOS `security` tool (matched by its base name) from memory, with `items` as the accounts of the Keychain
  * `service`. child_process.spawnSync is a sync host call (proc.run), which the harness's
  * async stubs do not cover, so this wraps invokeSync. Everything else, sqlite3 included,
  * runs for real.
@@ -53,7 +52,7 @@ export function fakeKeychain(harness, items, { service }) {
   const b64 = (s) => Buffer.from(s).toString("base64");
   host.invokeSync = (api, method, argsJson) => {
     const spec = JSON.parse(argsJson)[0];
-    if (api !== "proc" || method !== "run" || spec?.command !== SECURITY) return invokeSync(api, method, argsJson);
+    if (api !== "proc" || method !== "run" || typeof spec?.command !== "string" || basename(spec.command) !== "security") return invokeSync(api, method, argsJson);
     const [verb, ...rest] = spec.args;
     const account = rest[rest.indexOf("-a") + 1];
     let status = 0, stdout = "";

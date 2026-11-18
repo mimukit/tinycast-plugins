@@ -7,8 +7,5 @@
   "type": "module",
   "exports": {
     ".": "./src/index.mjs"
-  },
-  "dependencies": {
-    "@tinycast/kit": "workspace:*"
   }
 }
