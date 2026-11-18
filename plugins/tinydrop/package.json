@@ -7,17 +7,23 @@
   "type": "module",
   "packageManager": "pnpm@12.9.1",
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "build:install": "node scripts/build.mjs --install",
+    "build": "tinycast-build",
+    "build:install": "tinycast-build --install",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "smoke": "node scripts/smoke.mjs",
+    "smoke": "node smoke/index.mjs",
     "bench": "node scripts/bench.mjs",
     "probe": "node scripts/probe.mjs"
   },
+  "dependencies": {
+    "@tinycast/kit": "workspace:*"
+  },
   "devDependencies": {
     "@raycast/api": "^2.6.3",
+    "@tinycast/build": "workspace:*",
+    "@tinycast/config": "workspace:*",
+    "@tinycast/smoke": "workspace:*",
     "@types/node": "^26.6.4",
     "@types/react": "^19.3.0",
     "esbuild": "^0.28.2",

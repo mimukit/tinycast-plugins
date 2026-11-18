@@ -52,7 +52,7 @@ import { progressText, syncSummary } from "../sync/text";
 import type { BookmarkWriter, CleanupResult } from "../write/writer";
 import { AccountView } from "./AccountView";
 import { EditBookmarkForm } from "./EditBookmarkForm";
-import { Picker } from "./Picker";
+import { Picker } from "@tinycast/kit/ui";
 import { showFailure } from "./failure";
 import { openStore } from "./store";
 import { syncNow, syncTimes } from "./sync";

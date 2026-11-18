@@ -72,7 +72,7 @@ Attended: the owner approves the creation of the public repo `mimukit/tinycast-p
 
 Done when: `git rev-list --count` on the second parent of each import merge prints 35 for tinydrop and 31 for tinytick (`git log -- <path>` prints 34 and 30, because it hides the one merge commit in each old repo), `git log --follow plugins/tinydrop/src/auth/secrets.ts` reaches the first tinydrop commit, and `gh repo view mimukit/tinycast-plugins` shows `main`.
 
-### Phase 2: Add the workspace with no code change (#1)
+### Phase 2: Add the workspace with no code change (#1) (built 2026-11-18)
 
 - Add the root `package.json` (private, `packageManager: pnpm@12.9.1`, devDependencies `turbo`, `typescript`, `vitest`, `esbuild`, `@types/node`), `pnpm-workspace.yaml` and `turbo.json` as in the design decisions.
 - Add root scripts: `build`, `typecheck`, `test`, `smoke`, each as `turbo run <task>`.
@@ -85,7 +85,7 @@ Done when: `git rev-list --count` on the second parent of each import merge prin
 
 Done when: `pnpm install --frozen-lockfile` passes, `pnpm turbo run typecheck test build` passes for both plugins, `TINYCAST_DIR=<checkout> pnpm turbo run smoke` passes every flow of both plugins, and the baseline file lists every bundle of both plugins.
 
-### Phase 3: Extract `@tinycast/config` and `@tinycast/build` (#1)
+### Phase 3: Extract `@tinycast/config` and `@tinycast/build` (#1) (built 2026-11-18)
 
 - Make `packages/config` with `tsconfig.base.json` (the current shared `tsconfig.json`) and `vitest.base.ts`. Each plugin `tsconfig.json` keeps only `extends` and `include`. Each plugin `vitest.config.ts` merges the base. tinydrop keeps `passWithNoTests`.
 - Make `packages/build` with the `tinycast-build` bin. It reads `package.json`, `src/manifest.json` and `assets/` from the current folder and keeps `--dev`, `--install`, `TINYCAST_EXT_DIR`, `TINYCAST_BUNDLE_ID`, the icon hash and the 300 KB check.
@@ -94,7 +94,7 @@ Done when: `pnpm install --frozen-lockfile` passes, `pnpm turbo run typecheck te
 
 Done when: no `scripts/build.mjs` exists under `plugins/`, `pnpm turbo run typecheck test build` passes, smoke passes for both plugins, and each bundle size is within 1 KB of the Phase 2 baseline.
 
-### Phase 4: Extract `@tinycast/smoke` (#1)
+### Phase 4: Extract `@tinycast/smoke` (#1) (built 2026-11-18)
 
 - Make `packages/smoke` from the harness part of `tinydrop/scripts/smoke.mjs`: the Tinycast path check, the runtime import, `run()`, `fakeKeychain()` with a `service` option, `findAll()`, `press()`, `pressIn()`, `pressPrefix()`, `typeSearch()`, `setField()`, `waitFor()`, `runToastAction()`, `pickDropdown()`, and the `ONLY=` flow filter.
 - Merge the tinytick helpers that tinydrop lacks (`pressOn()`, `choose()`) and its `v2` option, as a general `preferences` option.
@@ -103,7 +103,7 @@ Done when: no `scripts/build.mjs` exists under `plugins/`, `pnpm turbo run typec
 
 Done when: `grep -rn "function fakeKeychain\|function findAll" plugins/` prints nothing, `pnpm turbo run smoke` passes every flow of both plugins with the same flow count as Phase 2, and `ONLY=<flowName> pnpm --filter tinydrop smoke` runs one flow.
 
-### Phase 5: Extract `@tinycast/kit` (#1)
+### Phase 5: Extract `@tinycast/kit` (#1) (built 2026-11-18)
 
 - Make `packages/kit/src/keychain.ts` from the shared part of `secrets.ts`: `createKeychain({ service })` returns `read`, `write`, `remove`, and the file exports `quoteArg` and `addCommand`. Each plugin `src/auth/secrets.ts` keeps its own account names and its own functions on top of the kit (tinydrop: `saveToken`, `deleteToken`; tinytick: `saveApiToken`, `saveV2Cookie`, `signOut`).
 - Make `packages/kit/src/queue.ts` from the tinydrop `queue.ts`, with `run()` and `runAll()`. Change tinytick to import it.
@@ -116,7 +116,7 @@ Done when: `grep -rn "function fakeKeychain\|function findAll" plugins/` prints 
 
 Done when: `scripts/check-copies.sh` prints nothing and exits 0, `grep -rn "Copied from" plugins packages` prints nothing, `grep -rln "@raycast/api" packages/kit/src --exclude-dir=ui` prints nothing, `pnpm turbo run typecheck test build smoke` passes with every tinydrop error-message test unchanged, and each bundle size is within 1 KB of the Phase 2 baseline.
 
-### Phase 6: Add CI (#1)
+### Phase 6: Add CI (#1) (built 2026-11-18)
 
 - Add `.github/workflows/ci.yml`. It runs on each push to `main` and each PR: set up pnpm and Node, `pnpm install --frozen-lockfile`, then `sqlite3 --version`, then `pnpm turbo run typecheck test build`, then `scripts/check-copies.sh`.
 - Add a smoke job that clones `abue-ammar/tinycast` at the pinned commit in the design decisions and runs `pnpm turbo run smoke` with `TINYCAST_DIR` set.

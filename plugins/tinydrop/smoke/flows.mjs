@@ -1,231 +1,13 @@
-// Smoke test: drives tinydrop's built bundles through Tinycast's own JavaScript
-// runtime (the Raycast shim and React reconciler Tinycast ships), with a fake
-// Raindrop server. Adapted from tinytick's smoke script.
-//
-//   git clone --depth 1 https://github.com/abue-ammar/tinycast ../tinycast
-//   pnpm build && pnpm smoke ../tinycast
-//
-// sqlite3 runs for real, on a database in a temp supportPath. /usr/bin/security
-// is answered from memory, so the run never touches a Keychain (and works on
-// Linux, which has none). The Swift renderer is not covered.
-//
-// Each flow is one async function in FLOWS. A later phase adds a flow there.
+// The tinydrop smoke flows. Each flow is one async function, listed in FLOWS in
+// run order; a new behavior adds one there. `ONLY=flowName pnpm smoke …` runs one flow.
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
-import { loadStore } from "./lib/load-store.mjs";
-
-const tinycastDir = resolve(process.argv[2] ?? process.env.TINYCAST_DIR ?? "../tinycast");
-const harnessPath = join(tinycastDir, "Scripts/raycast-runtime/test.mjs");
-if (!existsSync(harnessPath)) {
-  console.error(`No Tinycast checkout at ${tinycastDir}. Pass its path: pnpm smoke <path>`);
-  process.exit(1);
-}
-const dist = resolve(import.meta.dirname, "../dist");
-if (!existsSync(join(dist, "package.json"))) {
-  console.error("No dist/. Run pnpm build first.");
-  process.exit(1);
-}
-const { createHarness, bootConfig, describeTree, preferenceDefault } = await import(pathToFileURL(harnessPath).href);
-const manifest = JSON.parse(readFileSync(join(dist, "package.json"), "utf8"));
-const { SqliteStore, DB_FILE } = await loadStore();
-
-const API = "https://api.raindrop.io/rest/v1";
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-// ─── Fake Raindrop ──────────────────────────────────────────────────
-
-const USER = { _id: 7, fullName: "Test User", email: "test@example.com", pro: false, groups: [{ title: "My", collections: [11] }] };
-const COLLECTIONS = [{ _id: 11, title: "Dev", sort: 0, count: 2 }];
-const CHILDREN = [{ _id: 12, title: "Rust", parent: { $id: 11 }, sort: 0, count: 1 }];
-const BOOKMARKS = [
-  {
-    _id: 101, link: "https://doc.rust-lang.org/book/", title: "Rust ownership explained", domain: "doc.rust-lang.org",
-    type: "article", tags: ["rust", "read"], collection: { $id: 12 }, created: "2026-10-01T00:00:00.000Z",
-    lastUpdate: "2026-11-01T00:00:00.000Z", highlights: [{ _id: "h1", text: "borrow checker", note: "" }],
-  },
-  {
-    _id: 102, link: "https://example.com/pasta", title: "Cooking pasta", domain: "example.com", type: "link",
-    tags: [], collection: { $id: -1 }, important: true, created: "2026-10-02T00:00:00.000Z", lastUpdate: "2026-11-02T00:00:00.000Z",
-  },
-];
-/** On the server only: an incremental sync picks it up. */
-const NEW_ON_SERVER = {
-  _id: 103, link: "https://ziglang.org/comptime", title: "Zig comptime", domain: "ziglang.org", type: "article",
-  tags: ["zig"], collection: { $id: 11 }, created: "2026-11-03T00:00:00.000Z", lastUpdate: "2026-11-03T00:00:00.000Z",
-};
-/** In the seeded store and in the server's Trash: a sync removes it. */
-const TRASHED = {
-  _id: 104, link: "https://example.com/old", title: "Old trashed page", domain: "example.com", type: "link",
-  tags: [], collection: { $id: -99 }, created: "2026-09-01T00:00:00.000Z", lastUpdate: "2026-11-04T00:00:00.000Z",
-};
-const SERVER_BOOKMARKS = [...BOOKMARKS, NEW_ON_SERVER];
-const SERVER_TRASH = [TRASHED];
-/** The sync mark of a seeded store that synced before: older than 103, newer than 101. */
-const SYNCED_MARK = "2026-11-01T12:00:00.000Z";
-/** Tokens the fake server accepts. Any other token gets a 401. */
-const GOOD_TOKENS = new Set(["tok", "new-token"]);
-
-/**
- * The fake Raindrop API. `server.items` adds bookmarks the server holds (cleanup flows).
- * `server.links` answers every request outside the API, as a link check sends it: a map from
- * URL to `(method) => ({ status, url? })`, which may throw to act as a network error. Each such
- * request goes to `linkCalls` as "METHOD url"; a URL with no entry gets a thrown error.
- */
-function fakeRaindrop(calls, server = {}, linkCalls = []) {
-  // Each run gets its own copy of the server bookmarks, so a PUT reply carries the earlier writes.
-  const items = new Map([...SERVER_BOOKMARKS, ...(server.items ?? [])].map((b) => [b._id, structuredClone(b)]));
-  return async ([spec]) => {
-    if (!spec.url.startsWith(API)) {
-      linkCalls.push(`${spec.method} ${spec.url}`);
-      const answer = server.links?.[spec.url];
-      if (!answer) throw new Error(`fake link server: no answer for ${spec.url}`);
-      const { status, url } = await answer(spec.method, spec.headers ?? {});
-      return { status, statusText: String(status), headers: { "content-type": "text/html" }, url: url ?? spec.url, bodyBase64: "" };
-    }
-    const url = new URL(spec.url);
-    url.searchParams.delete("_");
-    const path = url.href.replace(API, "");
-    const body = spec.bodyBase64 ? JSON.parse(Buffer.from(spec.bodyBase64, "base64").toString()) : undefined;
-    const auth = spec.headers?.Authorization ?? spec.headers?.authorization ?? "";
-    calls.push(`${spec.method} ${path}${body ? " " + JSON.stringify(body) : ""}`);
-    const reply = (status, json) => ({
-      status, statusText: status === 200 ? "OK" : "Error", headers: { "content-type": "application/json" }, url: spec.url,
-      bodyBase64: Buffer.from(JSON.stringify(json)).toString("base64"),
-    });
-    if (!GOOD_TOKENS.has(auth.replace(/^Bearer /, ""))) return reply(401, { result: false, error: "Unauthorized" });
-    const p = url.pathname.replace("/rest/v1", "");
-    if (p === "/import/url/parse") {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      if (url.searchParams.get("url")?.includes("/failure")) return reply(200, { result: false });
-      return reply(200, { result: true, item: { title: "Fetched title", excerpt: "Fetched description" } });
-    }
-    if (p === "/user") return reply(200, { result: true, user: USER });
-    // Bulk trash and restore, as Phase 1 verified them: the path collection filters the IDs.
-    const bulk = p.match(/^\/raindrops\/(-?\d+)$/);
-    if (bulk && (spec.method === "DELETE" || spec.method === "PUT") && Array.isArray(body?.ids)) {
-      const from = Number(bulk[1]);
-      const to = spec.method === "DELETE" ? -99 : body.collection?.$id;
-      if (spec.method === "DELETE" && (from === -99 || from === 0)) return reply(400, { result: false, error: "fake server: refused bulk delete" });
-      let modified = 0;
-      for (const id of body.ids) {
-        const item = items.get(id);
-        if (item && item.collection.$id === from && typeof to === "number") {
-          item.collection = { $id: to };
-          modified++;
-        }
-      }
-      return reply(200, { result: true, matched: modified, modified });
-    }
-    const page = Number(url.searchParams.get("page") ?? 0), perpage = Number(url.searchParams.get("perpage") ?? 50);
-    const pageOf = (items) => ({ result: true, items: items.slice(page * perpage, (page + 1) * perpage), count: items.length });
-    if (p === "/raindrops/0") {
-      const sorted = [...SERVER_BOOKMARKS].sort((a, b) => Date.parse(b.lastUpdate) - Date.parse(a.lastUpdate));
-      return reply(200, pageOf(sorted));
-    }
-    if (p === "/raindrops/-99") {
-      const cutoff = (url.searchParams.get("search") ?? "").match(/^lastUpdate:>(\d{4}-\d{2}-\d{2})$/)?.[1] ?? "";
-      return reply(200, pageOf(SERVER_TRASH.filter((b) => b.lastUpdate > cutoff)));
-    }
-    if (p === "/collections") return reply(200, { result: true, items: COLLECTIONS });
-    if (p === "/collections/childrens") return reply(200, { result: true, items: CHILDREN });
-    if (p === "/tags/0") return reply(200, { result: true, items: [{ _id: "rust", count: 1 }, { _id: "read", count: 1 }] });
-    if (p === "/raindrop" && spec.method === "POST") {
-      // As pleaseParse would: a title and a domain from the page.
-      const { pleaseParse: _parse, ...fields } = body ?? {};
-      const host = (() => { try { return new URL(fields.link).hostname; } catch { return ""; } })();
-      return reply(200, {
-        result: true, item: {
-          _id: 900, collection: { $id: -1 }, type: "link", created: "2026-11-05T00:00:00.000Z", lastUpdate: "2026-11-05T00:00:00.000Z",
-          ...fields, title: fields.title || "Example Domain", domain: host,
-        }
-      });
-    }
-    const one = p.match(/^\/raindrop\/(\d+)$/);
-    if (one) {
-      const found = items.get(Number(one[1]));
-      if (!found) return reply(404, { result: false });
-      if (spec.method === "PUT") {
-        Object.assign(found, body);
-        return reply(200, { result: true, item: found });
-      }
-      if (spec.method === "DELETE") return reply(200, { result: true });
-      return reply(200, { result: true, item: found });
-    }
-    return reply(404, { result: false, error: `fake server: no route for ${spec.method} ${p}` });
-  };
-}
-
-// ─── Fake Keychain ──────────────────────────────────────────────────
-
-/** Reads one `"…"` argument of a `security -i` line, as secrets.ts quotes it. */
-function unquote(line, flag) {
-  const m = line.match(new RegExp(`${flag} "((?:[^"\\\\]|\\\\.)*)"`));
-  return m ? m[1].replace(/\\(.)/g, "$1") : undefined;
-}
-
-// Answers /usr/bin/security from memory. child_process.spawnSync is a sync host
-// call (proc.run), which the harness's async stubs do not cover, so this wraps
-// invokeSync. Everything else, sqlite3 included, runs for real.
-function fakeKeychain(harness, items) {
-  const host = harness.context.__tinycastHost;
-  const invokeSync = host.invokeSync.bind(host);
-  const b64 = (s) => Buffer.from(s).toString("base64");
-  host.invokeSync = (api, method, argsJson) => {
-    const spec = JSON.parse(argsJson)[0];
-    if (api !== "proc" || method !== "run" || spec?.command !== "/usr/bin/security") return invokeSync(api, method, argsJson);
-    const [verb, ...rest] = spec.args;
-    const account = rest[rest.indexOf("-a") + 1];
-    let status = 0, stdout = "";
-    if (verb === "find-generic-password") {
-      if (items[account] === undefined) status = 44;
-      else stdout = `${items[account]}\n`;
-    } else if (verb === "delete-generic-password") {
-      if (items[account] === undefined) status = 44;
-      delete items[account];
-    } else if (verb === "-i" && spec.input) {
-      const line = Buffer.from(spec.input, "base64").toString();
-      const a = unquote(line, "-a"), w = unquote(line, "-w");
-      if (line.startsWith("add-generic-password") && unquote(line, "-s") === "tinydrop" && a && w !== undefined) items[a] = w;
-      else status = 1;
-    } else {
-      status = 1;
-    }
-    return JSON.stringify({ ok: true, value: { stdout: b64(stdout), stderr: "", status } });
-  };
-}
-
-// ─── Harness ────────────────────────────────────────────────────────
-
-function findAll(node, pred, out = []) {
-  if (!node || typeof node !== "object") return out;
-  if (pred(node)) out.push(node);
-  for (const c of node.children ?? []) findAll(c, pred, out);
-  for (const v of Object.values(node.props ?? {})) if (v && typeof v === "object" && v.type) findAll(v, pred, out);
-  return out;
-}
-
-/**
- * A fresh temp supportPath. `seed: true` fills the store with the fake bookmarks;
- * `seed: { bookmarks, state, collections, opens }` fills it with those rows, `sync_state`
- * entries, collection rows, and one open per ID in `opens`.
- */
-async function supportDir({ seed = false } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), "tinydrop-smoke-"));
-  if (seed) {
-    const store = new SqliteStore({ path: join(dir, DB_FILE) });
-    await store.upsertPage(seed === true ? BOOKMARKS : seed.bookmarks);
-    if (seed.state) await store.setSyncState(seed.state);
-    if (seed.collections) await store.replaceCollections(seed.collections);
-    if (seed.tags) await store.replaceTags(seed.tags);
-    for (const id of seed.opens ?? []) await store.recordOpen(id);
-    for (const row of seed.checks ?? []) await store.saveLinkCheck(row);
-    for (const host of seed.ignored ?? []) await store.addIgnoredHost(host);
-  }
-  return dir;
-}
+import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  actionNamed, findAll, itemTitled, pickDropdown, press, pressIn, pressPrefix, rowTitles, runToastAction, setField, sleep, typeSearch, waitFor,
+} from "@tinycast/smoke";
+import { DB_FILE, SqliteStore, run } from "./harness.mjs";
+import { API, BOOKMARKS, COLLECTIONS, NEW_ON_SERVER, SYNCED_MARK, TRASHED } from "./server.mjs";
 
 /** A store that synced before: the server has one new bookmark and one trashed. */
 const SYNCED_SEED = { bookmarks: [...BOOKMARKS, TRASHED], state: { sync_mark: SYNCED_MARK } };
@@ -233,116 +15,9 @@ const SYNCED_SEED = { bookmarks: [...BOOKMARKS, TRASHED], state: { sync_mark: SY
 /** Reads the store a flow ran against. */
 const storeOf = (ctx) => new SqliteStore({ path: join(ctx.supportPath, DB_FILE) });
 
-const tempDirs = [];
-
-/**
- * Runs one command in a fresh harness. `keychain` is the starting Keychain,
- * `interact` drives the screen. Returns the failure count.
- */
-async function run(commandName, { args = {}, keychain = { "test-token": "tok" }, seed = false, server = {}, preferences = {}, storage: storageSeed, clipboard = "", confirmations = [], interact } = {}) {
-  const cmd = manifest.commands.find((c) => c.name === commandName);
-  assert.ok(cmd, `command ${commandName} is in the manifest`);
-  const supportPath = await supportDir({ seed });
-  tempDirs.push(supportPath);
-  const calls = [], linkCalls = [], toasts = [], updates = [], alerts = [], opened = [], copied = [];
-  const storage = { ...(storageSeed ?? {}) };
-  const harness = createHarness({
-    verbose: !!process.env.VERBOSE,
-    stubs: {
-      "fetch.request": fakeRaindrop(calls, server, linkCalls),
-      "feedback.showToast": (a) => { toasts.push(a[0]); return `toast-${toasts.length}`; },
-      "feedback.showHUD": (a) => { toasts.push({ hud: a[0] }); return null; },
-      "feedback.updateToast": (a) => { updates.push(a[1]); return null; },
-      "feedback.hideToast": () => null,
-      "feedback.confirmAlert": (a) => { alerts.push(a[0]); return confirmations.shift() ?? true; },
-      "storage.get": (a) => storage[a[0]] ?? null,
-      "storage.set": (a) => { storage[a[0]] = a[1]; return null; },
-      "storage.remove": (a) => { delete storage[a[0]]; return null; },
-      "system.open": (a) => { opened.push(a[0]); return null; },
-      "clipboard.copy": (a) => { copied.push(a[0]); return null; },
-      "clipboard.readText": () => clipboard,
-    },
-  });
-  fakeKeychain(harness, keychain);
-  harness.boot(bootConfig({
-    environment: { ...bootConfig().environment, extensionName: manifest.name, commandName, commandMode: cmd.mode, assetsPath: join(dist, "assets"), supportPath },
-    preferences: { ...Object.fromEntries((manifest.preferences ?? []).map((p) => [p.name, preferenceDefault(p)])), ...preferences },
-    launchProps: { arguments: args },
-  }));
-  const file = join(dist, `${commandName}.js`);
-  harness.start("s1", readFileSync(file, "utf8"), file, dist, cmd.mode === "view" ? "view" : "no-view", { launchProps: { arguments: args } });
-  await sleep(900);
-  console.log(`\n=== ${commandName} ===`);
-  if (harness.state.failures.length) console.log("FAILURES:", harness.state.failures);
-  let failed = harness.state.failures.length;
-  const ctx = { harness, calls, linkCalls, toasts, updates, alerts, opened, copied, storage, keychain, supportPath, tree: () => harness.state.trees.at(-1) };
-  if (interact) {
-    try {
-      await interact(ctx);
-      if (harness.state.failures.length > failed) throw new Error(`runtime failure: ${harness.state.failures.slice(failed).join("; ")}`);
-    } catch (error) {
-      console.log(`✗ ${error.message}`);
-      failed += 1;
-    }
-  }
-  const last = ctx.tree();
-  if (last && process.env.TREE) console.log(describeTree(last));
-  if (process.env.VERBOSE) console.log("calls:", calls, "toasts:", toasts);
-  harness.stop("s1");
-  return failed;
-}
-
-const actionNamed = (tree, title) => findAll(tree, (n) => n.props?.title === title && n.props?.onAction?.$fn)[0];
-
-async function press(ctx, title, wait = 500) {
-  const a = actionNamed(ctx.tree(), title);
-  assert.ok(a, `action "${title}" exists`);
-  ctx.harness.dispatch("s1", a.props.onAction.$fn, []);
-  await sleep(wait);
-}
-
-async function typeSearch(ctx, text) {
-  const list = findAll(ctx.tree(), (n) => n.type === "List" && n.props?.onSearchTextChange?.$fn).at(-1);
-  assert.ok(list, "a search bar exists");
-  ctx.harness.dispatch("s1", list.props.onSearchTextChange.$fn, [text]);
-  await sleep(500);
-}
-
-async function setField(ctx, type, id, value) {
-  const field = findAll(ctx.tree(), (n) => n.type === type && n.props?.id === id).at(-1);
-  assert.ok(field, `${type} "${id}" exists`);
-  ctx.harness.dispatch("s1", field.props.onTinycastChange.$fn, [value]);
-  await sleep(100);
-}
-
-/** Polls until `pred()` is true; the pacer spaces API calls 500 ms apart, so a sync takes seconds. */
-async function waitFor(pred, what, ms = 15_000) {
-  const end = Date.now() + ms;
-  while (!pred()) {
-    if (Date.now() > end) throw new Error(`timed out waiting for ${what}`);
-    await sleep(100);
-  }
-}
-
-/** Runs a toast's action, as Tinycast does when you press it. */
-function runToastAction(ctx, action) {
-  assert.ok(action?.token, "the toast action has a token");
-  ctx.harness.call(`__tinycast.runToastAction(${JSON.stringify(action.token)})`);
-}
-
 const huds = (ctx) => ctx.toasts.filter((t) => t.hud).map((t) => t.hud);
 const toastTitles = (ctx) => [...ctx.toasts, ...ctx.updates].map((t) => t.title).filter(Boolean);
 const decoded = (calls) => calls.map((c) => decodeURIComponent(c));
-
-/** Picks a value in the search bar's collection dropdown. */
-async function pickDropdown(ctx, title) {
-  const dropdown = findAll(ctx.tree(), (n) => n.type === "List.Dropdown").at(-1);
-  assert.ok(dropdown, "a collection dropdown exists");
-  const item = findAll(dropdown, (n) => n.type === "List.Dropdown.Item" && n.props.title === title)[0];
-  assert.ok(item, `the dropdown has "${title}"`);
-  ctx.harness.dispatch("s1", dropdown.props.onChange.$fn, [item.props.value]);
-  await sleep(500);
-}
 
 const dropdownTitles = (ctx) =>
   findAll(ctx.tree(), (n) => n.type === "List.Dropdown.Item").map((n) => n.props.title);
@@ -353,7 +28,6 @@ const rowActions = (ctx) => {
   return findAll(row, (n) => n.type === "Action").map((n) => `${n.props.title}${n.props.shortcut ? ` ${[...n.props.shortcut.modifiers, n.props.shortcut.key].join("+")}` : ""}`);
 };
 
-const rowTitles = (ctx) => findAll(ctx.tree(), (n) => n.type === "List.Item").map((n) => n.props.title);
 const sent = (calls, re) => calls.some((c) => re.test(c));
 
 // ─── Flows ──────────────────────────────────────────────────────────
@@ -649,14 +323,6 @@ async function flowOpenAndCopy() {
 }
 
 // ─── Phase 6: row actions and undo ──────────────────────────────────
-
-/** Presses the action whose title starts with `prefix`, such as "Undo". */
-async function pressPrefix(ctx, prefix, wait = 300) {
-  const a = findAll(ctx.tree(), (n) => typeof n.props?.title === "string" && n.props.title.startsWith(prefix) && n.props?.onAction?.$fn)[0];
-  assert.ok(a, `an action starting with "${prefix}"`);
-  ctx.harness.dispatch("s1", a.props.onAction.$fn, []);
-  await sleep(wait);
-}
 
 const hasActionPrefix = (ctx, prefix) =>
   findAll(ctx.tree(), (n) => typeof n.props?.title === "string" && n.props.title.startsWith(prefix) && n.props?.onAction?.$fn).length > 0;
@@ -988,25 +654,12 @@ function cleanupItem(id, link, title, collectionId, over = {}) {
   };
 }
 
-/** The List.Item with this title. */
-const itemTitled = (ctx, title) => findAll(ctx.tree(), (n) => n.type === "List.Item" && n.props.title === title)[0];
-
 /** The action titles of the List.Item with this title, in panel order. */
 const itemActions = (ctx, title) => {
   const item = itemTitled(ctx, title);
   assert.ok(item, `a row titled "${title}": ${rowTitles(ctx)}`);
   return findAll(item, (n) => n.type === "Action" || n.type === "Action.Push").map((n) => n.props.title);
 };
-
-/** Presses an action of the List.Item with this title. */
-async function pressIn(ctx, rowTitle, actionTitle, wait = 500) {
-  const item = itemTitled(ctx, rowTitle);
-  assert.ok(item, `a row titled "${rowTitle}": ${rowTitles(ctx)}`);
-  const a = findAll(item, (n) => n.props?.title === actionTitle && n.props?.onAction?.$fn)[0];
-  assert.ok(a, `row "${rowTitle}" has action "${actionTitle}"`);
-  ctx.harness.dispatch("s1", a.props.onAction.$fn, []);
-  await sleep(wait);
-}
 
 const accessoryTexts = (ctx, title) => (itemTitled(ctx, title)?.props.accessories ?? []).map((a) => a.text ?? a.tag?.value ?? a.tag);
 
@@ -1401,8 +1054,7 @@ async function flowCleanupDeadLinksCsv() {
   });
 }
 
-const ONLY = process.env.ONLY;
-const FLOWS_ALL = [
+export const FLOWS = [
   flowSignedOut, flowSearch, flowSignIn, flowTokenRejected, flowSignOut,
   flowSyncCommand, flowSyncFirstAndRejected, flowSearchSync, flowFullResync, flowResyncReminder, flowRefreshOnOpen, flowSearchSyncRejected,
   flowSearchOperators, flowDetailsPanel, flowOpenAndCopy,
@@ -1420,18 +1072,3 @@ const FLOWS_ALL = [
   flowCleanupMarkLive,
   flowCleanupCompactReasons,
 ];
-/** `ONLY=flowName pnpm smoke …` runs one flow. */
-const FLOWS = ONLY ? FLOWS_ALL.filter((f) => f.name === ONLY) : FLOWS_ALL;
-
-let failures = 0;
-try {
-  for (const flow of FLOWS) {
-    const failed = await flow();
-    console.log(`${failed ? "✗" : "✓"} ${flow.name}`);
-    failures += failed;
-  }
-} finally {
-  for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true });
-}
-console.log(failures ? `\n✗ ${failures} failure(s)` : "\n✓ smoke passed");
-process.exit(failures ? 1 : 0);

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "tasks": {
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "build": {
+      "dependsOn": ["transit"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["transit"]
+    },
+    "test": {
+      "dependsOn": ["transit"]
+    },
+    "smoke": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "passThroughEnv": ["TINYCAST_DIR", "ONLY", "VERBOSE", "TREE"]
+    },
+    "build:install": {
+      "cache": false
+    },
+    "probe": {
+      "cache": false,
+      "passThroughEnv": ["RAINDROP_TOKEN"]
+    },
+    "bench": {
+      "cache": false
+    }
+  }
+}

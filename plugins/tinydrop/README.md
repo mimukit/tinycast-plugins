@@ -41,7 +41,7 @@ Open counts stay on your Mac and never go to Raindrop.
 
 tinydrop uses a Raindrop test token. In Raindrop, open Settings › Integrations › For Developers, create an app, and create a test token. Paste it in tinydrop's Account screen (`⌘⇧A`).
 
-The token goes in your login Keychain under the service `tinydrop`, through `/usr/bin/security`. Tinycast keeps preferences, LocalStorage and Cache as plaintext JSON, so the token never goes there. There is no OAuth sign-in: Raindrop's OAuth needs a client secret and has no PKCE, and Tinycast no longer supports extension OAuth.
+The token goes in your login Keychain under the service `tinydrop`, through the macOS `security` tool. Tinycast keeps preferences, LocalStorage and Cache as plaintext JSON, so the token never goes there. There is no OAuth sign-in: Raindrop's OAuth needs a client secret and has no PKCE, and Tinycast no longer supports extension OAuth.
 
 ## Commands
 
@@ -138,7 +138,7 @@ pnpm bench               # p50 and p95 write and query times on 10,000 seeded bo
 pnpm probe               # Phase 1 facts on the live API: one probe bookmark, deleted after; needs RAINDROP_TOKEN
 ```
 
-`pnpm smoke` needs a Tinycast checkout (`git clone --depth 1 https://github.com/abue-ammar/tinycast`) and a fresh `pnpm build`. It runs Tinycast's own Raycast shim and React reconciler in Node, with a real `sqlite3`, so it catches API and render problems without a Mac. It does not cover the Swift renderer. It answers `/usr/bin/security` from memory, so it never touches the Keychain. To run one flow, name it: `ONLY=flowEndToEnd pnpm smoke ../tinycast`. The flow names are the `flow*` functions in `scripts/smoke.mjs`.
+`pnpm smoke` needs a Tinycast checkout (`git clone --depth 1 https://github.com/abue-ammar/tinycast`) and a fresh `pnpm build`. It runs Tinycast's own Raycast shim and React reconciler in Node, with a real `sqlite3`, so it catches API and render problems without a Mac. It does not cover the Swift renderer. It answers the macOS `security` tool from memory, so it never touches the Keychain. To run one flow, name it: `ONLY=flowEndToEnd pnpm smoke ../tinycast`. The flow names are the `flow*` functions in `smoke/flows.mjs`.
 
 The store uses `/usr/bin/sqlite3`. Set `TINYDROP_SQLITE3` to use another binary.
 

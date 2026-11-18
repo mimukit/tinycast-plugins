@@ -6,23 +6,13 @@ tinytick is a TickTick extension for the [Tinycast](https://github.com/abue-amma
 
 ## Build and test
 
-- `pnpm install`
-- `pnpm typecheck`, `pnpm test`
+Repo-wide build, test and smoke commands and the repo-wide rules are in the root [AGENTS.md](../../AGENTS.md). Run a tinytick script from the repo root with `pnpm --filter tinytick <script>`, or from this folder with `pnpm <script>`.
+
 - `pnpm build` writes `dist/`
 - `pnpm build:install` builds and copies `dist/` into Tinycast's extensions folder (macOS only)
-- `pnpm smoke <tinycast-checkout>` runs the built bundles in Tinycast's JS runtime against a fake TickTick server. Run it after `pnpm build` when you change a command or a component.
+- `pnpm smoke [<tinycast-checkout>]` runs the built bundles in Tinycast's JS runtime against a fake TickTick server. Run it after `pnpm build` when you change a command or a component. `ONLY=<flowName>` runs one flow; each flow is a `flow*` function in `smoke/flows.mjs`, and a new behavior adds one there and to `FLOWS`.
 
 ## Rules for agents
 
-- Do not add the Raycast CLI (`ray`) or `@raycast/utils`. The build is `scripts/build.mjs`.
 - Keep `src/parse/`, `src/views/`, `src/undo/` and `src/api/` free of `@raycast/api` imports, so Vitest can run them in Node.
-- Never store a secret in a preference, `LocalStorage` or `Cache`. Tinycast keeps those as plaintext JSON. Secrets go through `src/auth/secrets.ts` to the Keychain.
 - Every `/api/v2` call must sit behind the `enableV2` preference.
-- Keep each command bundle under 300 KB. `pnpm build` prints the sizes.
-- Use pnpm only. Do not commit a lockfile from another package manager.
-
-## Docs artifact naming
-
-- An artifact under `docs/<type>/` (a plan, a QA plan, a review, research) is named `NNNN-<type>-<slug>-YYYY-MM-DD.md`.
-- `NNNN` is a four-digit serial, per directory, assigned in creation order and never reused. To get it, list the directory, take the highest serial, and add one. An empty directory starts at `0001`.
-- `YYYY-MM-DD` is the creation date. The whole name stays fixed after edits.
