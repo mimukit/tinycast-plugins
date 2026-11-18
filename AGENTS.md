@@ -6,6 +6,7 @@ tinycast-plugins holds the extensions for the [Tinycast](https://github.com/abue
 
 - `plugins/tinydrop/`: a Raindrop.io extension. See [plugins/tinydrop/AGENTS.md](plugins/tinydrop/AGENTS.md).
 - `plugins/tinytick/`: a TickTick extension. See [plugins/tinytick/AGENTS.md](plugins/tinytick/AGENTS.md).
+- `plugins/tinynoise/`: plays local background sounds with `afplay`. See [plugins/tinynoise/AGENTS.md](plugins/tinynoise/AGENTS.md).
 
 ## Build and test
 

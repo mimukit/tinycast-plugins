@@ -108,11 +108,12 @@ export function recordingStubs(ctx, { clipboard = "", confirmations = [] } = {})
  * - `keychain`: the Keychain accounts a run starts with, unless the run passes `keychain`.
  * - `stubs(ctx, opts)`: the host stubs of a run, "fetch.request" included.
  * - `supportPath(opts)`: an async function that returns a fresh supportPath, or none.
+ * - `home(opts)`: an async function that returns a fresh home folder for os.homedir() and HOME, or none.
  * - `caches`: the boot caches, or none.
  * - `settle`: the ms a run waits after start; `wait`: the ms a press waits by default.
  * - `flowLines`: print a ✓ or ✗ line after each flow.
  */
-export async function createSmoke({ dist, service, keychain: startKeychain = {}, stubs, supportPath, caches, settle = 900, wait = 500, flowLines = true }) {
+export async function createSmoke({ dist, service, keychain: startKeychain = {}, stubs, supportPath, home, caches, settle = 900, wait = 500, flowLines = true }) {
   const dir = tinycastDir();
   const harnessPath = join(dir, "Scripts/raycast-runtime/test.mjs");
   if (!existsSync(harnessPath)) {
@@ -130,7 +131,7 @@ export async function createSmoke({ dist, service, keychain: startKeychain = {},
   /**
    * Runs one command in a fresh harness. `keychain` is the starting Keychain,
    * `preferences` override the manifest defaults, `storage` seeds LocalStorage,
-   * `interact` drives the screen. Other options go to `stubs` and `supportPath`.
+   * `interact` drives the screen. Other options go to `stubs`, `supportPath` and `home`.
    * Returns the failure count.
    */
   async function run(commandName, opts = {}) {
@@ -139,14 +140,18 @@ export async function createSmoke({ dist, service, keychain: startKeychain = {},
     assert.ok(cmd, `command ${commandName} is in the manifest`);
     const support = supportPath ? await supportPath(opts) : undefined;
     if (support) tempDirs.push(support);
+    const homeDir = home ? await home(opts) : undefined;
+    if (homeDir) tempDirs.push(homeDir);
     const ctx = {
       harness: undefined, calls: [], linkCalls: [], toasts: [], updates: [], alerts: [], opened: [], copied: [],
-      storage: { ...storage }, keychain, supportPath: support, wait, tree: () => ctx.harness.state.trees.at(-1),
+      storage: { ...storage }, keychain, supportPath: support, home: homeDir, wait, tree: () => ctx.harness.state.trees.at(-1),
     };
     const harness = createHarness({ verbose: !!process.env.VERBOSE, stubs: stubs(ctx, opts) });
     ctx.harness = harness;
     fakeKeychain(harness, keychain, { service });
+    const node = bootConfig().node;
     harness.boot(bootConfig({
+      ...(homeDir ? { node: { ...node, homedir: homeDir, cwd: homeDir, env: { ...node.env, HOME: homeDir } } } : {}),
       environment: {
         ...bootConfig().environment, extensionName: manifest.name, commandName, commandMode: cmd.mode, assetsPath: join(dist, "assets"),
         ...(support ? { supportPath: support } : {}),
