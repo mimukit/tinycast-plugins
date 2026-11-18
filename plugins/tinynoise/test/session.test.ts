@@ -29,7 +29,8 @@ const goodPlayer = () => script("good-player", "exec sleep 30");
 /** A player that fails at once, as afplay does on a corrupt file. */
 const badPlayer = () => script("bad-player", "exit 3");
 /** A player that ignores SIGTERM. */
-const stubbornPlayer = () => script("stubborn-player", "trap '' TERM\nsleep 30");
+/** It writes `<base>/stubborn-ready` once the trap is set, so a test can wait for that. */
+const stubbornPlayer = () => script("stubborn-player", `trap '' TERM\n: > "${join(base, "stubborn-ready")}"\nsleep 30`);
 
 function session(player: string, extra: Partial<SessionOptions> = {}) {
   return new Session({
@@ -216,7 +217,9 @@ describe("Session lifecycle", () => {
   it("sends SIGKILL to the group when the player ignores SIGTERM", async () => {
     const s = session(stubbornPlayer(), { stopGraceMs: 400 });
     const record = await startTracked(s, sound("rain.m4a"));
-    await waitUntil(() => groupMembers(record.pgid).length >= 2, "the player under the loop");
+    // A group count of 2 can include the forked shell before the player sets its
+    // trap, and SIGTERM then ends it. Wait until the trap is in place.
+    await waitUntil(() => existsSync(join(base, "stubborn-ready")), "the player to ignore SIGTERM");
 
     expect(await s.stop()).toBe("stopped");
     expect(signals).toEqual([
