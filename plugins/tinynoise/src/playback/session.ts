@@ -6,7 +6,7 @@
 // and Player failure rows):
 //   lock/          an mkdir lock that serializes start, stop and toggle
 //   session.json   { pid, pgid, token, file, startedAt } of the loop that plays
-//   last.json      { file } of the last started sound, for Toggle Sound
+//   last.json      { file } of the last started sound, for Toggle Noise
 //   failure.json   written by the loop after three fast player failures
 //
 // No signal goes out from a PID alone: `ps` must show the recorded PGID and the
@@ -192,7 +192,7 @@ export class Session {
     return failure;
   }
 
-  /** The last started sound, for Toggle Sound. */
+  /** The last started sound, for Toggle Noise. */
   readLast(): string | undefined {
     return readJson<{ file: string }>(this.lastPath, (v) => typeof v?.file === "string")?.file;
   }

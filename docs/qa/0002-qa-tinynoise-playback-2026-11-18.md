@@ -31,7 +31,7 @@ Priority legend: 🔴 Critical · 🟡 Normal · 🟢 Low
 | TC-1.1 | 1: Empty sound folder | The empty state reads well | 🟡 Normal |
 | TC-2.1 | 2: Seeded sound folder, nothing plays | The list looks right in the real app | 🔴 Critical |
 | TC-2.2 | 2: Seeded sound folder, nothing plays | Play, switch and stop sound right | 🔴 Critical |
-| TC-2.3 | 2: Seeded sound folder, nothing plays | Toggle Sound and Stop Sound feel right | 🔴 Critical |
+| TC-2.3 | 2: Seeded sound folder, nothing plays | Toggle Noise and Stop Noise feel right | 🔴 Critical |
 | TC-2.4 | 2: Seeded sound folder, nothing plays | Playback survives Command-Q | 🔴 Critical |
 | TC-2.5 | 2: Seeded sound folder, nothing plays | A corrupt file does not play | 🟡 Normal |
 
@@ -53,7 +53,7 @@ Priority legend: 🔴 Critical · 🟡 Normal · 🟢 Low
 
 **Steps**
 
-1. Open Tinycast and run "Play Sound".
+1. Open Tinycast and run "Play Noise".
    - [ ] The empty state is clear and looks native
      - title "No sounds yet"
      - the description names `~/Music/Tinynoise` and the seven formats
@@ -85,7 +85,7 @@ Priority legend: 🔴 Critical · 🟡 Normal · 🟢 Low
 mkdir -p ~/Music/Tinynoise/water
 ```
 
-2. Make sure no sound plays. Run "Stop Sound" in Tinycast.
+2. Make sure no sound plays. Run "Stop Noise" in Tinycast.
 
 - [ ] Setup complete
 
@@ -95,7 +95,7 @@ mkdir -p ~/Music/Tinynoise/water
 
 **Steps**
 
-1. Run "Play Sound".
+1. Run "Play Noise".
    - [ ] The sections and rows look right and read well
      - the "Sounds" section first, then one section for each subfolder
      - row names without extensions; a file name subtitle only on duplicate names
@@ -120,7 +120,7 @@ mkdir -p ~/Music/Tinynoise/water
 1. Press Enter on the rain sound.
    - [ ] The HUD says "Playing <name>", and the rain sound plays on a loop
    - [ ] The restart gap at the end of the file is acceptable to you
-2. Run "Play Sound" again.
+2. Run "Play Noise" again.
    - [ ] The "Now playing" row shows the rain sound at the top, and its section row shows "Playing"
 3. Press Enter on the rain sound again.
    - [ ] A HUD says the sound already plays, and the audio does not restart
@@ -137,17 +137,17 @@ mkdir -p ~/Music/Tinynoise/water
 
 **Notes.** _what actually happened on a fail; why it was skipped_
 
-### TC-2.3: Toggle Sound and Stop Sound feel right  ·  🔴 Critical
+### TC-2.3: Toggle Noise and Stop Noise feel right  ·  🔴 Critical
 
 **Goal.** The two no-view commands control playback without opening a list.
 
 **Steps**
 
-1. Run "Toggle Sound".
+1. Run "Toggle Noise".
    - [ ] The last sound (ocean) plays again, with a "Playing" HUD
-2. Run "Toggle Sound" again.
+2. Run "Toggle Noise" again.
    - [ ] The audio stops, with a "Sound stopped" HUD
-3. Run "Stop Sound".
+3. Run "Stop Noise".
    - [ ] The HUD says "Nothing plays"
 
 **Result**
@@ -166,9 +166,9 @@ mkdir -p ~/Music/Tinynoise/water
 
 1. Play the rain sound. Quit Tinycast with Command-Q.
    - [ ] The rain sound keeps playing
-2. Open Tinycast again and run "Play Sound".
+2. Open Tinycast again and run "Play Noise".
    - [ ] The "Now playing" row shows the rain sound
-3. Run "Stop Sound".
+3. Run "Stop Noise".
    - [ ] The audio stops
 
 **Result**
@@ -185,7 +185,7 @@ mkdir -p ~/Music/Tinynoise/water
 
 **Steps**
 
-1. Run "Play Sound". Press Enter on "broken".
+1. Run "Play Noise". Press Enter on "broken".
    - [ ] A failure toast "Cannot play broken" explains the problem in plain words, and nothing plays
 
 **Result**

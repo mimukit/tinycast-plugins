@@ -19,7 +19,7 @@ In Tinycast, open Settings › Extensions › Install New › Add from folder, a
 
 ## The sound folder
 
-Put your audio files in `~/Music/Tinynoise`. The extension creates the folder the first time Play Sound opens, and it reads the folder again each time the list opens (or when you press Refresh).
+Put your audio files in `~/Music/Tinynoise`. The extension creates the folder the first time Play Noise opens, and it reads the folder again each time the list opens (or when you press Refresh).
 
 - Files directly in the folder show in a section called "Sounds".
 - Each folder one level down shows as its own section, named after the folder. Files deeper than that are ignored.
@@ -34,11 +34,11 @@ Volume follows the system volume. There are no bundled sounds and no downloads.
 
 | Command | What it does |
 |---|---|
-| Play Sound | Lists your sounds. Enter plays the sound, or switches to it when another one plays. Enter on the sound that plays now does nothing. A "Now playing" row at the top shows the current sound, or the last failure when the player gave up. |
-| Stop Sound | Stops the sound that plays. Says "Nothing plays" when there is none. |
-| Toggle Sound | Stops the sound that plays, or plays the last sound again. When there is no last sound, or its file is gone, it says so and starts nothing. |
+| Play Noise | Lists your sounds. Enter plays the sound, or switches to it when another one plays. Enter on the sound that plays now does nothing. A "Now playing" row at the top shows the current sound, or the last failure when the player gave up. |
+| Stop Noise | Stops the sound that plays. Says "Nothing plays" when there is none. |
+| Toggle Noise | Stops the sound that plays, or plays the last sound again. When there is no last sound, or its file is gone, it says so and starts nothing. |
 
-Actions on a row in Play Sound:
+Actions on a row in Play Noise:
 
 | Action | Keys |
 |---|---|
@@ -48,11 +48,11 @@ Actions on a row in Play Sound:
 | Open Sound Folder | `⌘O` |
 | Show in Finder | `⌘⇧F` |
 
-Playback keeps going after you close the launcher and after you quit Tinycast. Only Stop Sound, Toggle Sound or the Stop action ends it. When the player fails three times in a row within two seconds of each start, the loop gives up and the next Play Sound shows the error.
+Playback keeps going after you close the launcher and after you quit Tinycast. Only Stop Noise, Toggle Noise or the Stop action ends it. When the player fails three times in a row within two seconds of each start, the loop gives up and the next Play Noise shows the error.
 
 ## Uninstall
 
-Run Stop Sound first. The playback loop runs outside Tinycast, so removing the extension does not stop a sound that plays. If you forget, quit it from a terminal with `pkill -f tinynoise-loop`.
+Run Stop Noise first. The playback loop runs outside Tinycast, so removing the extension does not stop a sound that plays. If you forget, quit it from a terminal with `pkill -f tinynoise-loop`.
 
 Uninstall removes the extension's own support folder (its lock and its session records). It keeps `~/Music/Tinynoise` and your sounds, because that folder lives outside the extension.
 

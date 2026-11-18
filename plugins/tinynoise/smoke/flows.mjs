@@ -137,7 +137,7 @@ async function flowStaleRecordSendsNoSignal() {
 
 async function flowToggleWithNoLastSound() {
   return run("toggle-sound", { interact: async (ctx) => {
-    assert.deepEqual(huds(ctx), ["No last sound. Pick one in Play Sound."]);
+    assert.deepEqual(huds(ctx), ["No last sound. Pick one in Play Noise."]);
     assert.ok(!existsSync(join(ctx.supportPath, "session.json")), "nothing starts");
   }});
 }
@@ -148,7 +148,7 @@ async function flowToggleWithMissingFile() {
     home,
     records: { "last.json": { file: join(soundsIn(home), "gone.m4a") } },
     interact: async (ctx) => {
-      assert.deepEqual(huds(ctx), ["Cannot play gone. Pick a sound in Play Sound."]);
+      assert.deepEqual(huds(ctx), ["Cannot play gone. Pick a sound in Play Noise."]);
       assert.ok(!existsSync(join(ctx.supportPath, "session.json")), "nothing starts");
     },
   });

@@ -15,10 +15,10 @@ export default async function Command() {
         await showHUD(`Playing ${soundLabel(result.file)}`);
         break;
       case "no-last":
-        await showHUD("No last sound. Pick one in Play Sound.");
+        await showHUD("No last sound. Pick one in Play Noise.");
         break;
       case "unplayable":
-        await showHUD(`Cannot play ${soundLabel(result.file)}. Pick a sound in Play Sound.`);
+        await showHUD(`Cannot play ${soundLabel(result.file)}. Pick a sound in Play Noise.`);
         break;
     }
   } catch (error) {

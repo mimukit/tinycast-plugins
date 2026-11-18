@@ -11,21 +11,21 @@
   "commands": [
     {
       "name": "play-sound",
-      "title": "Play Sound",
+      "title": "Play Noise",
       "subtitle": "Tinynoise",
       "description": "Pick a background sound from ~/Music/Tinynoise and play it on a loop.",
       "mode": "view"
     },
     {
       "name": "stop-sound",
-      "title": "Stop Sound",
+      "title": "Stop Noise",
       "subtitle": "Tinynoise",
       "description": "Stop the background sound that plays now.",
       "mode": "no-view"
     },
     {
       "name": "toggle-sound",
-      "title": "Toggle Sound",
+      "title": "Toggle Noise",
       "subtitle": "Tinynoise",
       "description": "Stop the background sound, or play the last sound again.",
       "mode": "no-view"
