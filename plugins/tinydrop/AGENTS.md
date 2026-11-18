@@ -12,7 +12,7 @@ Repo-wide build, test and smoke commands and the repo-wide rules are in the root
 
 - `pnpm build` writes `dist/`
 - `pnpm build:install` builds and copies `dist/` into Tinycast's extensions folder (macOS only)
-- `pnpm smoke [<tinycast-checkout>]` runs the built bundles in Tinycast's JS runtime against a fake Raindrop server. `ONLY=<flowName>` runs one flow; each flow is a `flow*` function in `scripts/smoke.mjs`, and a new behavior adds one there
+- `pnpm smoke [<tinycast-checkout>]` runs the built bundles in Tinycast's JS runtime against a fake Raindrop server. `ONLY=<flowName>` runs one flow; each flow is a `flow*` function in `smoke/flows.mjs`, and a new behavior adds one there and to `FLOWS`
 - `pnpm bench` seeds 10,000 bookmarks and prints the p50 and p95 write and query times
 - `pnpm probe` checks the Phase 1 API facts against the live API; it reads `RAINDROP_TOKEN` from the environment (`set -a; . ./.env; set +a` inside the command)
 

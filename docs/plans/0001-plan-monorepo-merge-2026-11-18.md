@@ -94,7 +94,7 @@ Done when: `pnpm install --frozen-lockfile` passes, `pnpm turbo run typecheck te
 
 Done when: no `scripts/build.mjs` exists under `plugins/`, `pnpm turbo run typecheck test build` passes, smoke passes for both plugins, and each bundle size is within 1 KB of the Phase 2 baseline.
 
-### Phase 4: Extract `@tinycast/smoke` (#1)
+### Phase 4: Extract `@tinycast/smoke` (#1) (built 2026-11-18)
 
 - Make `packages/smoke` from the harness part of `tinydrop/scripts/smoke.mjs`: the Tinycast path check, the runtime import, `run()`, `fakeKeychain()` with a `service` option, `findAll()`, `press()`, `pressIn()`, `pressPrefix()`, `typeSearch()`, `setField()`, `waitFor()`, `runToastAction()`, `pickDropdown()`, and the `ONLY=` flow filter.
 - Merge the tinytick helpers that tinydrop lacks (`pressOn()`, `choose()`) and its `v2` option, as a general `preferences` option.
