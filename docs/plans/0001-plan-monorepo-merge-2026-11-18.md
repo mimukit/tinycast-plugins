@@ -72,7 +72,7 @@ Attended: the owner approves the creation of the public repo `mimukit/tinycast-p
 
 Done when: `git rev-list --count` on the second parent of each import merge prints 35 for tinydrop and 31 for tinytick (`git log -- <path>` prints 34 and 30, because it hides the one merge commit in each old repo), `git log --follow plugins/tinydrop/src/auth/secrets.ts` reaches the first tinydrop commit, and `gh repo view mimukit/tinycast-plugins` shows `main`.
 
-### Phase 2: Add the workspace with no code change (#1)
+### Phase 2: Add the workspace with no code change (#1) (built 2026-11-18)
 
 - Add the root `package.json` (private, `packageManager: pnpm@12.9.1`, devDependencies `turbo`, `typescript`, `vitest`, `esbuild`, `@types/node`), `pnpm-workspace.yaml` and `turbo.json` as in the design decisions.
 - Add root scripts: `build`, `typecheck`, `test`, `smoke`, each as `turbo run <task>`.

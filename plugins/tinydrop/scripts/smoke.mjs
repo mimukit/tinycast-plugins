@@ -2,8 +2,11 @@
 // runtime (the Raycast shim and React reconciler Tinycast ships), with a fake
 // Raindrop server. Adapted from tinytick's smoke script.
 //
-//   git clone --depth 1 https://github.com/abue-ammar/tinycast ../tinycast
-//   pnpm build && pnpm smoke ../tinycast
+//   git clone --depth 1 https://github.com/abue-ammar/tinycast ../tinycast   # run in the repo root
+//   pnpm build && pnpm smoke [<tinycast-checkout>]
+//
+// The checkout is the first argument, else TINYCAST_DIR, else ../tinycast beside
+// the repo root.
 //
 // sqlite3 runs for real, on a database in a temp supportPath. /usr/bin/security
 // is answered from memory, so the run never touches a Keychain (and works on
@@ -17,7 +20,8 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { loadStore } from "./lib/load-store.mjs";
 
-const tinycastDir = resolve(process.argv[2] ?? process.env.TINYCAST_DIR ?? "../tinycast");
+const repoRoot = resolve(import.meta.dirname, "../../..");
+const tinycastDir = resolve(process.argv[2] ?? process.env.TINYCAST_DIR ?? resolve(repoRoot, "../tinycast"));
 const harnessPath = join(tinycastDir, "Scripts/raycast-runtime/test.mjs");
 if (!existsSync(harnessPath)) {
   console.error(`No Tinycast checkout at ${tinycastDir}. Pass its path: pnpm smoke <path>`);

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "tasks": {
+    "build": {
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {},
+    "test": {},
+    "smoke": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "passThroughEnv": ["TINYCAST_DIR", "ONLY", "VERBOSE", "TREE"]
+    },
+    "build:install": {
+      "cache": false
+    },
+    "probe": {
+      "cache": false,
+      "passThroughEnv": ["RAINDROP_TOKEN"]
+    },
+    "bench": {
+      "cache": false
+    }
+  }
+}
