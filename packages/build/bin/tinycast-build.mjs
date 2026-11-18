@@ -87,7 +87,7 @@ if (failed) {
 }
 
 if (process.argv.includes("--install")) {
-  const bundleId = process.env.TINYCAST_BUNDLE_ID ?? "com.tinycast.app";
+  const bundleId = process.env.TINYCAST_BUNDLE_ID ?? "com.abueammar.tinycast";
   const target =
     process.env.TINYCAST_EXT_DIR ?? join(homedir(), "Library/Application Support", bundleId, "extensions", manifest.name);
   if (!existsSync(join(target, ".."))) {

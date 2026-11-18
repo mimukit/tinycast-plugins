@@ -15,7 +15,7 @@ pnpm install
 pnpm --filter tinynoise build
 ```
 
-In Tinycast, open Settings › Extensions › Install New › Add from folder, and pick `plugins/tinynoise/dist/`. After that, `pnpm --filter tinynoise build:install` rebuilds and copies `dist/` over the installed copy. It writes to `~/Library/Application Support/com.tinycast.app/extensions/tinynoise`. Set `TINYCAST_BUNDLE_ID` for another build of Tinycast, or `TINYCAST_EXT_DIR` for any other folder.
+In Tinycast, open Settings › Extensions › Install New › Add from folder, and pick `plugins/tinynoise/dist/`. After that, `pnpm --filter tinynoise build:install` rebuilds and copies `dist/` over the installed copy. It writes to `~/Library/Application Support/com.abueammar.tinycast/extensions/tinynoise`. Set `TINYCAST_BUNDLE_ID` for another build of Tinycast, or `TINYCAST_EXT_DIR` for any other folder.
 
 ## The sound folder
 

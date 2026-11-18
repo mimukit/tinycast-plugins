@@ -22,7 +22,7 @@ pnpm install
 pnpm build
 ```
 
-In Tinycast, open Settings › Extensions › Install New › Add from folder, and pick `dist/`. After that, `pnpm build:install` rebuilds and copies `dist/` over the installed copy, so you do not need to add it again. It writes to `~/Library/Application Support/com.tinycast.app/extensions/tinydrop`. Set `TINYCAST_BUNDLE_ID=com.tinycast.app.dev` for a debug build of Tinycast, or `TINYCAST_EXT_DIR` for any other folder.
+In Tinycast, open Settings › Extensions › Install New › Add from folder, and pick `dist/`. After that, `pnpm build:install` rebuilds and copies `dist/` over the installed copy, so you do not need to add it again. It writes to `~/Library/Application Support/com.abueammar.tinycast/extensions/tinydrop`. Set `TINYCAST_BUNDLE_ID=com.abueammar.tinycast.dev` for a debug build of Tinycast, or `TINYCAST_EXT_DIR` for any other folder.
 
 Then open Search Bookmarks, sign in (below), and press `⌘R` for the first sync.
 
