@@ -13,16 +13,16 @@ Pre-release, personal use. The plan is in [docs/plans/0001-plan-tinytick-feature
 
 ## Install
 
-You need Tinycast with extensions turned on, Node 22 or later, and pnpm.
+You need Tinycast with extensions turned on, Node 22 or later, and pnpm. tinytick lives in the [tinycast-plugins](../../README.md) monorepo, so run these from the repo root:
 
 ```sh
-git clone https://github.com/mimukit/tinytick
-cd tinytick
+git clone https://github.com/mimukit/tinycast-plugins
+cd tinycast-plugins
 pnpm install
-pnpm build
+pnpm --filter tinytick build
 ```
 
-In Tinycast, open Settings › Extensions › Install New › Add from folder, and pick `dist/`. After that, `pnpm build:install` rebuilds and copies `dist/` over the installed copy, so you do not need to add it again. It writes to `~/Library/Application Support/com.abueammar.tinycast/extensions/tinytick`. Set `TINYCAST_BUNDLE_ID=com.abueammar.tinycast.dev` for a debug build of Tinycast, or `TINYCAST_EXT_DIR` for any other folder.
+In Tinycast, open Settings › Extensions › Install New › Add from folder, and pick `plugins/tinytick/dist/`. After that, `pnpm --filter tinytick build:install` rebuilds and copies `dist/` over the installed copy, so you do not need to add it again. It writes to `~/Library/Application Support/com.abueammar.tinycast/extensions/tinytick`. Set `TINYCAST_BUNDLE_ID=com.abueammar.tinycast.dev` for a debug build of Tinycast, or `TINYCAST_EXT_DIR` for any other folder.
 
 ## Sign in
 
@@ -98,15 +98,17 @@ A task with no date words is due today. `⌘⇧D` in Add Task keeps the date wor
 
 ## Development
 
+Run these from the repo root:
+
 ```sh
-pnpm typecheck
-pnpm test                # Vitest: parser, views, cache, clients
-pnpm build               # dist/, and fails if a command bundle is over 300 KB
-pnpm smoke ../tinycast   # runs the bundles in Tinycast's JS runtime against a fake TickTick
+pnpm --filter tinytick typecheck
+pnpm --filter tinytick test                 # Vitest: parser, views, cache, clients
+pnpm --filter tinytick build                # dist/, and fails if a command bundle is over 300 KB
+pnpm --filter tinytick smoke                # runs the bundles in Tinycast's JS runtime against a fake TickTick
 ```
 
-`pnpm smoke` needs a Tinycast checkout (`git clone --depth 1 https://github.com/abue-ammar/tinycast`). It runs Tinycast's own Raycast shim and React reconciler in Node, so it catches API and render problems without a Mac. It does not cover the Swift renderer.
+The smoke run needs a Tinycast checkout. It looks in its first argument, then `TINYCAST_DIR`, then `../tinycast` beside the repo root (`git clone --depth 1 https://github.com/abue-ammar/tinycast ../tinycast` from the repo root). It runs Tinycast's own Raycast shim and React reconciler in Node, so it catches API and render problems without a Mac. It does not cover the Swift renderer.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](../../LICENSE).

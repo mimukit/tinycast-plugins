@@ -9,20 +9,20 @@ A [Raindrop.io](https://raindrop.io) extension for the [Tinycast](https://github
 
 ## Status
 
-Built, not yet checked on a Mac. All three commands exist, and `pnpm typecheck`, `pnpm test`, `pnpm build` and `pnpm smoke` pass on Linux, where the smoke run drives the bundles through Tinycast's JavaScript runtime against a fake Raindrop server. The check in real Tinycast on macOS 26 (the rendered look, the Keychain, the macOS `sqlite3`, and the query time on a real library) is still to do, in [issue #2](https://github.com/mimukit/tinydrop/issues/2). The v1 plan is [docs/plans/0001-plan-tinydrop-features-2026-11-04.md](docs/plans/0001-plan-tinydrop-features-2026-11-04.md).
+Built and checked in real Tinycast on macOS 26: the rendered look, the Keychain, the macOS `sqlite3`, and the query time on a real library. That check was [issue #2](https://github.com/mimukit/tinydrop/issues/2) in the old repo, now closed. The typecheck, tests, build and smoke run also pass on Linux, where the smoke run drives the bundles through Tinycast's JavaScript runtime against a fake Raindrop server. The v1 plan is [docs/plans/0001-plan-tinydrop-features-2026-11-04.md](docs/plans/0001-plan-tinydrop-features-2026-11-04.md).
 
 ## Install
 
-You need Tinycast with extensions turned on, Node 24, and pnpm.
+You need Tinycast with extensions turned on, Node 24, and pnpm. tinydrop lives in the [tinycast-plugins](../../README.md) monorepo, so run these from the repo root:
 
 ```sh
-git clone https://github.com/mimukit/tinydrop
-cd tinydrop
+git clone https://github.com/mimukit/tinycast-plugins
+cd tinycast-plugins
 pnpm install
-pnpm build
+pnpm --filter tinydrop build
 ```
 
-In Tinycast, open Settings › Extensions › Install New › Add from folder, and pick `dist/`. After that, `pnpm build:install` rebuilds and copies `dist/` over the installed copy, so you do not need to add it again. It writes to `~/Library/Application Support/com.abueammar.tinycast/extensions/tinydrop`. Set `TINYCAST_BUNDLE_ID=com.abueammar.tinycast.dev` for a debug build of Tinycast, or `TINYCAST_EXT_DIR` for any other folder.
+In Tinycast, open Settings › Extensions › Install New › Add from folder, and pick `plugins/tinydrop/dist/`. After that, `pnpm --filter tinydrop build:install` rebuilds and copies `dist/` over the installed copy, so you do not need to add it again. It writes to `~/Library/Application Support/com.abueammar.tinycast/extensions/tinydrop`. Set `TINYCAST_BUNDLE_ID=com.abueammar.tinycast.dev` for a debug build of Tinycast, or `TINYCAST_EXT_DIR` for any other folder.
 
 Then open Search Bookmarks, sign in (below), and press `⌘R` for the first sync.
 
@@ -125,23 +125,23 @@ Browse Collections, Unsorted triage and a random bookmark command are planned fo
 
 ## Development
 
-The build follows [tinytick](https://github.com/mimukit/tinytick): pnpm, TypeScript, esbuild and Vitest, with no Raycast CLI. The commands:
+The build uses pnpm, TypeScript, esbuild and Vitest, with no Raycast CLI. It bundles with `tinycast-build` from `packages/build`. Run these from the repo root:
 
 ```sh
 pnpm install
-pnpm typecheck
-pnpm test                # Vitest; store tests run a real sqlite3 and skip when there is none
-pnpm build               # dist/, one CommonJS bundle per command; fails over 300 KB
-pnpm build:install       # builds and copies dist/ into Tinycast's extensions folder (macOS)
-pnpm smoke ../tinycast   # runs the bundles in Tinycast's JS runtime against a fake Raindrop
-pnpm bench               # p50 and p95 write and query times on 10,000 seeded bookmarks
-pnpm probe               # Phase 1 facts on the live API: one probe bookmark, deleted after; needs RAINDROP_TOKEN
+pnpm --filter tinydrop typecheck
+pnpm --filter tinydrop test                 # Vitest; store tests run a real sqlite3 and skip when there is none
+pnpm --filter tinydrop build                # dist/, one CommonJS bundle per command; fails over 300 KB
+pnpm --filter tinydrop build:install        # builds and copies dist/ into Tinycast's extensions folder (macOS)
+pnpm --filter tinydrop smoke                # runs the bundles in Tinycast's JS runtime against a fake Raindrop
+pnpm --filter tinydrop bench                # p50 and p95 write and query times on 10,000 seeded bookmarks
+pnpm --filter tinydrop probe                # Phase 1 facts on the live API: one probe bookmark, deleted after; needs RAINDROP_TOKEN
 ```
 
-`pnpm smoke` needs a Tinycast checkout (`git clone --depth 1 https://github.com/abue-ammar/tinycast`) and a fresh `pnpm build`. It runs Tinycast's own Raycast shim and React reconciler in Node, with a real `sqlite3`, so it catches API and render problems without a Mac. It does not cover the Swift renderer. It answers the macOS `security` tool from memory, so it never touches the Keychain. To run one flow, name it: `ONLY=flowEndToEnd pnpm smoke ../tinycast`. The flow names are the `flow*` functions in `smoke/flows.mjs`.
+The smoke run needs a Tinycast checkout. It looks in its first argument, then `TINYCAST_DIR`, then `../tinycast` beside the repo root (`git clone --depth 1 https://github.com/abue-ammar/tinycast ../tinycast` from the repo root). It also needs a fresh build. It runs Tinycast's own Raycast shim and React reconciler in Node, with a real `sqlite3`, so it catches API and render problems without a Mac. It does not cover the Swift renderer. It answers the macOS `security` tool from memory, so it never touches the Keychain. To run one flow, name it: `ONLY=flowEndToEnd pnpm --filter tinydrop smoke`. The flow names are the `flow*` functions in `smoke/flows.mjs`.
 
 The store uses `/usr/bin/sqlite3`. Set `TINYDROP_SQLITE3` to use another binary.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](../../LICENSE).

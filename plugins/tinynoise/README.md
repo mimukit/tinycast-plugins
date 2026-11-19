@@ -62,10 +62,10 @@ Uninstall removes the extension's own support folder (its lock and its session r
 pnpm --filter tinynoise typecheck
 pnpm --filter tinynoise test                 # Vitest: discovery, path checks, and the real loop with a fake player
 pnpm --filter tinynoise build                # dist/, and fails if a command bundle is over 300 KB
-pnpm --filter tinynoise smoke ../tinycast    # runs the bundles in Tinycast's JS runtime, with temp folders and no audio
+pnpm --filter tinynoise smoke                # runs the bundles in Tinycast's JS runtime, with temp folders and no audio
 ```
 
-The lifecycle tests run on Linux and macOS. They start the loop with a fake player in a temp folder and signal only the process groups they started. `pnpm smoke` needs a Tinycast checkout (`git clone --depth 1 https://github.com/abue-ammar/tinycast`). It does not cover the Swift renderer or real audio.
+The lifecycle tests run on Linux and macOS. They start the loop with a fake player in a temp folder and signal only the process groups they started. The smoke run needs a Tinycast checkout. It looks in its first argument, then `TINYCAST_DIR`, then `../tinycast` beside the repo root (`git clone --depth 1 https://github.com/abue-ammar/tinycast ../tinycast` from the repo root). It does not cover the Swift renderer or real audio.
 
 ## License
 

@@ -4,7 +4,7 @@
 
 tinydrop is a Raindrop.io extension for the [Tinycast](https://github.com/abue-ammar/tinycast) launcher. It keeps the bookmarks in a local SQLite database, read through the macOS `/usr/bin/sqlite3`, so search never waits on the network. Writes go straight to the Raindrop REST API. It is a Raycast-format extension: a `package.json` manifest plus one CommonJS bundle per command, with `react`, `react/jsx-runtime` and `@raycast/api` left external. Stack: TypeScript, React, esbuild, Vitest. Package manager: pnpm.
 
-v1 is built and passes the Linux gate; the check in real Tinycast on macOS is issue #2. The v1 plan is [docs/plans/0001-plan-tinydrop-features-2026-11-04.md](docs/plans/0001-plan-tinydrop-features-2026-11-04.md). The build copies its tooling from [tinytick](https://github.com/mimukit/tinytick).
+v1 is built, passes the Linux gate, and passed the check in real Tinycast on macOS (issue #2 in the archived `mimukit/tinydrop` repo). The v1 plan is [docs/plans/0001-plan-tinydrop-features-2026-11-04.md](docs/plans/0001-plan-tinydrop-features-2026-11-04.md).
 
 ## Build and test
 
