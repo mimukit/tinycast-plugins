@@ -31,11 +31,12 @@ function alive(pid) {
 async function flowEmptyState() {
   const home = makeHome();
   return run("play-sound", { home, interact: async (ctx) => {
-    assert.deepEqual(rowTitles(ctx), [], "no rows");
-    const empty = findAll(ctx.tree(), (n) => n.type === "List.EmptyView")[0];
-    assert.ok(empty, "the empty view shows");
-    assert.equal(empty.props.title, "No sounds yet");
-    assert.match(empty.props.description, /Music\/Tinynoise/);
+    // A row, not a List.EmptyView: Tinycast shows the action pill only when a row exists.
+    assert.deepEqual(rowTitles(ctx), ["No sounds yet"], "one empty-state row");
+    const empty = findAll(ctx.tree(), (n) => n.type === "List.Item")[0];
+    assert.match(empty.props.subtitle, /Music\/Tinynoise/);
+    const actions = findAll(empty, (n) => n.type === "Action").map((n) => n.props.title);
+    assert.deepEqual(actions, ["Open Sound Folder", "Refresh"], "Open Sound Folder is the primary action");
     assert.ok(existsSync(soundsIn(home)), "the command creates ~/Music/Tinynoise");
     await press(ctx, "Open Sound Folder");
     assert.deepEqual(ctx.opened, [soundsIn(home)], "Open Sound Folder opens the sound folder");

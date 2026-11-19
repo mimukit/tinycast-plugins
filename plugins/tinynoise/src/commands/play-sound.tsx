@@ -121,17 +121,21 @@ export default function Command() {
           ))}
         </List.Section>
       ))}
-      <List.EmptyView
-        title="No sounds yet"
-        description={`Add .m4a, .aac, .mp3, .wav, .aif, .aiff or .caf files to ${root}`}
-        icon={Icon.Music}
-        actions={
-          <ActionPanel>
-            <Action title="Open Sound Folder" icon={Icon.Folder} onAction={() => open(root)} />
-            <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={load} />
-          </ActionPanel>
-        }
-      />
+      {!state.loading && state.sections.length === 0 ? (
+        // Tinycast draws the action pill and answers ⌘K only when a row exists,
+        // so the empty folder gets a row instead of a List.EmptyView.
+        <List.Item
+          title="No sounds yet"
+          subtitle={`Add .m4a, .aac, .mp3, .wav, .aif, .aiff or .caf files to ${root}`}
+          icon={Icon.Music}
+          actions={
+            <ActionPanel>
+              <Action title="Open Sound Folder" icon={Icon.Folder} onAction={() => open(root)} />
+              <Action title="Refresh" icon={Icon.ArrowClockwise} shortcut={{ modifiers: ["cmd"], key: "r" }} onAction={load} />
+            </ActionPanel>
+          }
+        />
+      ) : null}
     </List>
   );
 }
